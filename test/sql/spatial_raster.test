@@ -1,0 +1,23 @@
+# name: test/sql/spatial_raster.test
+# description: test spatial_raster extension
+# group: [spatial_raster]
+
+# Before we load the extension, this will fail
+statement error
+SELECT spatial_raster('Sam');
+----
+Catalog Error: Scalar Function with name spatial_raster does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require spatial_raster
+
+# Confirm the extension works
+query I
+SELECT spatial_raster('Sam');
+----
+SpatialRaster Sam 🐥
+
+query I
+SELECT spatial_raster_openssl_version('Michael') ILIKE 'SpatialRaster Michael, my linked OpenSSL version is OpenSSL%';
+----
+true
