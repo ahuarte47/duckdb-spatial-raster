@@ -6,3 +6,7 @@
 	path = extension-ci-tools
 	url = https://github.com/duckdb/extension-ci-tools
 	branch = main
+[submodule "duckdb-spatial"]
+	path = duckdb-spatial
+	url = https://github.com/duckdb/duckdb-spatial
+	branch = main
