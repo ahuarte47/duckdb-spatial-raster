@@ -4,20 +4,23 @@
 
 # Before we load the extension, this will fail
 statement error
-SELECT spatial_raster('Sam');
+SELECT * FROM RT_Drivers();
 ----
-Catalog Error: Scalar Function with name spatial_raster does not exist!
+Catalog Error: Table Function with name rt_drivers does not exist!
 
 # Require statement will ensure this test is run with this extension loaded
 require spatial_raster
 
 # Confirm the extension works
 query I
-SELECT spatial_raster('Sam');
+SELECT
+    short_name
+FROM
+    RT_Drivers()
+WHERE
+    short_name IN ('COG', 'GTiff')
+ORDER BY
+    short_name;
 ----
-SpatialRaster Sam 🐥
-
-query I
-SELECT spatial_raster_openssl_version('Michael') ILIKE 'SpatialRaster Michael, my linked OpenSSL version is OpenSSL%';
-----
-true
+COG
+GTiff
