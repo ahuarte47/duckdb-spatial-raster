@@ -1,5 +1,20 @@
 {
   "dependencies": [
-    "openssl"
-  ]
+    "vcpkg-cmake",
+    "openssl",
+    "zlib",
+    "geos",
+    "expat",
+    {
+      "name": "curl",
+      "platform": "!wasm32 & !ios & !android",
+      "features": ["openssl"],
+      "default-features": false
+    }
+  ],
+  "vcpkg-configuration": {
+    "overlay-ports": [
+      "./duckdb-spatial/vcpkg_ports"
+    ]
+  }
 }
