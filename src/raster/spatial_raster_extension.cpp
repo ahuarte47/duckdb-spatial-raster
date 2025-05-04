@@ -11,6 +11,7 @@
 #include "gdal_module.hpp"
 #include "raster_types.hpp"
 #include "raster_table_functions.hpp"
+#include "raster_casts_functions.hpp"
 
 namespace duckdb {
 
@@ -24,6 +25,9 @@ static void LoadInternal(DatabaseInstance &instance) {
 
 	// Register the Table functions
 	GdalRasterTableFunctions::Register(instance);
+
+	// Register the Casts functions
+	GdalRasterCastsFunctions::Register(instance);
 }
 
 void SpatialRasterExtension::Load(DuckDB &db) {

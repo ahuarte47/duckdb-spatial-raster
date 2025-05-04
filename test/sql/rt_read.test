@@ -1,0 +1,11 @@
+require spatial_raster
+
+query I
+SELECT raster FROM RT_Read('__WORKING_DIRECTORY__/test/data/mosaic/SCL.tif-land-clip00.tiff');
+----
+RASTER
+
+query I
+SELECT raster FROM '__WORKING_DIRECTORY__/test/data/mosaic/SCL.tif-land-clip00.tiff';
+----
+RASTER
