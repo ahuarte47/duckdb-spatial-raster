@@ -6,6 +6,7 @@
 // DuckDB
 #include "duckdb/main/database.hpp"
 #include "duckdb/main/extension_util.hpp"
+#include "duckdb/common/multi_file_reader.hpp"
 #include "duckdb/parser/expression/function_expression.hpp"
 #include "duckdb/parser/tableref/table_function_ref.hpp"
 // Spatial
@@ -162,10 +163,10 @@ struct RT_Read {
 
 	static unique_ptr<FunctionData> Bind(ClientContext &context, TableFunctionBindInput &input,
 	                                     vector<LogicalType> &return_types, vector<string> &names) {
-		return_types.emplace_back(LogicalType::VARCHAR);
-		return_types.emplace_back(RasterTypes::RASTER());
 		names.emplace_back("path");
+		return_types.emplace_back(LogicalType::VARCHAR);
 		names.emplace_back("raster");
+		return_types.emplace_back(RasterTypes::RASTER());
 
 		auto raw_file_name = input.inputs[0].GetValue<string>();
 		auto parameters = input.named_parameters;
@@ -333,6 +334,177 @@ struct RT_Read {
 	}
 };
 
+//======================================================================================================================
+// RT_Read_Meta
+//======================================================================================================================
+
+struct RT_Read_Meta {
+
+	//------------------------------------------------------------------------------------------------------------------
+	// Bind
+	//------------------------------------------------------------------------------------------------------------------
+
+	struct BindData final : TableFunctionData {
+		vector<string> file_names;
+
+		explicit BindData(vector<string> file_names_p) : file_names(std::move(file_names_p)) {
+		}
+	};
+
+	static unique_ptr<FunctionData> Bind(ClientContext &context, TableFunctionBindInput &input,
+	                                     vector<LogicalType> &return_types, vector<string> &names) {
+		names.emplace_back("file_name");
+		return_types.push_back(LogicalType::VARCHAR);
+		names.emplace_back("driver_short_name");
+		return_types.push_back(LogicalType::VARCHAR);
+		names.emplace_back("driver_long_name");
+		return_types.push_back(LogicalType::VARCHAR);
+		names.emplace_back("upper_left_x");
+		return_types.push_back(LogicalType::DOUBLE);
+		names.emplace_back("upper_left_y");
+		return_types.push_back(LogicalType::DOUBLE);
+		names.emplace_back("width");
+		return_types.push_back(LogicalType::INTEGER);
+		names.emplace_back("height");
+		return_types.push_back(LogicalType::INTEGER);
+		names.emplace_back("scale_x");
+		return_types.push_back(LogicalType::DOUBLE);
+		names.emplace_back("scale_y");
+		return_types.push_back(LogicalType::DOUBLE);
+		names.emplace_back("skew_x");
+		return_types.push_back(LogicalType::DOUBLE);
+		names.emplace_back("skew_y");
+		return_types.push_back(LogicalType::DOUBLE);
+		names.emplace_back("srid");
+		return_types.push_back(LogicalType::INTEGER);
+		names.emplace_back("num_bands");
+		return_types.push_back(LogicalType::INTEGER);
+
+		// Get the filename list
+		const auto mfreader = MultiFileReader::Create(input.table_function);
+		const auto mflist = mfreader->CreateFileList(context, input.inputs[0], FileGlobOptions::ALLOW_EMPTY);
+		return make_uniq_base<FunctionData, BindData>(mflist->GetAllFiles());
+	};
+
+	//------------------------------------------------------------------------------------------------------------------
+	// Init Global
+	//------------------------------------------------------------------------------------------------------------------
+
+	struct State final : GlobalTableFunctionState {
+		idx_t current_idx;
+		explicit State() : current_idx(0) {
+		}
+	};
+
+	static unique_ptr<GlobalTableFunctionState> Init(ClientContext &context, TableFunctionInitInput &input) {
+		return make_uniq_base<GlobalTableFunctionState, State>();
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	// Init Local
+	//------------------------------------------------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------------------------------------------------
+	// Execute
+	//------------------------------------------------------------------------------------------------------------------
+
+	static void Execute(ClientContext &context, TableFunctionInput &input, DataChunk &output) {
+		auto &bind_data = input.bind_data->Cast<BindData>();
+		auto &state = input.global_state->Cast<State>();
+
+		auto out_size = MinValue<idx_t>(STANDARD_VECTOR_SIZE, bind_data.file_names.size() - state.current_idx);
+
+		for (idx_t out_idx = 0; out_idx < out_size; out_idx++, state.current_idx++) {
+			auto file_name = bind_data.file_names[state.current_idx];
+
+			GDALDatasetUniquePtr dataset;
+			try {
+				dataset =
+				    GDALDatasetUniquePtr(GDALDataset::Open(file_name.c_str(), GDAL_OF_RASTER | GDAL_OF_VERBOSE_ERROR));
+			} catch (...) {
+				// Just skip anything we cant open
+				out_idx--;
+				out_size--;
+				continue;
+			}
+
+			Raster raster(dataset.get());
+			double gt[6] = {0};
+			raster.GetGeoTransform(gt);
+
+			output.data[0].SetValue(out_idx, file_name);
+			output.data[1].SetValue(out_idx, dataset->GetDriver()->GetDescription());
+			output.data[2].SetValue(out_idx, dataset->GetDriver()->GetMetadataItem(GDAL_DMD_LONGNAME));
+			output.data[3].SetValue(out_idx, gt[0]);
+			output.data[4].SetValue(out_idx, gt[3]);
+			output.data[5].SetValue(out_idx, raster.GetRasterXSize());
+			output.data[6].SetValue(out_idx, raster.GetRasterYSize());
+			output.data[7].SetValue(out_idx, gt[1]);
+			output.data[8].SetValue(out_idx, gt[5]);
+			output.data[9].SetValue(out_idx, gt[2]);
+			output.data[10].SetValue(out_idx, gt[4]);
+			output.data[11].SetValue(out_idx, raster.GetSrid());
+			output.data[12].SetValue(out_idx, raster.GetRasterCount());
+		}
+		output.SetCardinality(out_size);
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	// Cardinality
+	//------------------------------------------------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------------------------------------------------
+	// Replacement Scan
+	//------------------------------------------------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------------------------------------------------
+	// Documentation
+	//------------------------------------------------------------------------------------------------------------------
+
+	static constexpr auto DOCUMENTATION = R"(
+	    Read the metadata from a variety of geospatial raster file formats using the GDAL library.
+
+	    The `RT_Read_Meta` table function accompanies the `RT_Read` table function, but instead of reading the contents of a file, this function scans the metadata instead.
+	)";
+
+	static constexpr auto EXAMPLE = R"(
+		SELECT
+			driver_short_name,
+			driver_long_name,
+			upper_left_x,
+			upper_left_y,
+			width,
+			height,
+			scale_x,
+			scale_y,
+			skew_x,
+			skew_y,
+			srid,
+			num_bands
+		FROM
+			RT_Read_Meta('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+		;
+
+		┌───────────────────┬──────────────────┬──────────────┬──────────────┬───────┬────────┬─────────┬─────────┬────────┬────────┬───────┬───────────┐
+		│ driver_short_name │ driver_long_name │ upper_left_x │ upper_left_y │ width │ height │ scale_x │ scale_y │ skew_x │ skew_y │ srid  │ num_bands │
+		│      varchar      │     varchar      │    double    │    double    │ int32 │ int32  │ double  │ double  │ double │ double │ int32 │   int32   │
+		├───────────────────┼──────────────────┼──────────────┼──────────────┼───────┼────────┼─────────┼─────────┼────────┼────────┼───────┼───────────┤
+		│ GTiff             │ GeoTIFF          │     541020.0 │    4796640.0 │  3438 │   5322 │    20.0 │   -20.0 │    0.0 │    0.0 │ 32630 │         1 │
+		└───────────────────┴──────────────────┴──────────────┴──────────────┴───────┴────────┴─────────┴─────────┴────────┴────────┴───────┴───────────┘
+	)";
+
+	//------------------------------------------------------------------------------------------------------------------
+	// Register
+	//------------------------------------------------------------------------------------------------------------------
+
+	static void Register(DatabaseInstance &db) {
+		const TableFunction func("RT_Read_Meta", {LogicalType::VARCHAR}, Execute, Bind, Init);
+		ExtensionUtil::RegisterFunction(db, MultiFileReader::CreateFunctionSet(func));
+
+		FunctionBuilder::AddTableFunctionDocs(db, "RT_Read_Meta", DOCUMENTATION, EXAMPLE, {{"ext", "spatial_raster"}});
+	}
+};
+
 } // namespace
 
 // ######################################################################################################################
@@ -344,6 +516,7 @@ void GdalRasterTableFunctions::Register(DatabaseInstance &db) {
 	// Register functions
 	RT_Drivers::Register(db);
 	RT_Read::Register(db);
+	RT_Read_Meta::Register(db);
 }
 
 } // namespace duckdb

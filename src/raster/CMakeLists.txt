@@ -10,5 +10,6 @@ set(EXTENSION_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/raster.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/raster_table_functions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/raster_casts_functions.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../duckdb-spatial/src/spatial/modules/proj/proj_db.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../duckdb-spatial/src/spatial/util/function_builder.cpp
 PARENT_SCOPE)
