@@ -1,6 +1,7 @@
 set(EXTENSION_SOURCES
     ${EXTENSION_SOURCES}
     ${CMAKE_CURRENT_SOURCE_DIR}/spatial_raster_extension.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/proj_module.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gdal_module.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gdal_dataset_factory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gdal_dataset_registry.cpp
