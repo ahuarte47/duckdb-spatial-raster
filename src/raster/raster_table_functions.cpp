@@ -6,7 +6,7 @@
 // DuckDB
 #include "duckdb/main/database.hpp"
 #include "duckdb/main/extension_util.hpp"
-#include "duckdb/common/multi_file/multi_file_reader.hpp"
+#include "duckdb/common/multi_file_reader.hpp"
 #include "duckdb/parser/expression/function_expression.hpp"
 #include "duckdb/parser/parsed_data/create_copy_function_info.hpp"
 #include "duckdb/parser/tableref/table_function_ref.hpp"
