@@ -4,7 +4,17 @@
 name: Stable Extension Distribution Pipeline
 on:
   push:
+    branches:
+      - v1.2.2
+    paths-ignore:
+      - '**/README.md'
+      - 'doc/**'
   pull_request:
+    branches:
+      - v1.2.2
+    paths-ignore:
+      - '**/README.md'
+      - 'doc/**'
   workflow_dispatch:
 
 concurrency:
@@ -31,4 +41,4 @@ jobs:
       duckdb_version: v1.2.2
       ci_tools_version: v1.2.2
       exclude_archs: linux_amd64_musl
-      deploy_latest: ${{ startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' }}
+      deploy_latest: ${{ startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/v1.2.2' }}
