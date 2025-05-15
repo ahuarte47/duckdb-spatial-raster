@@ -1,5 +1,5 @@
 #include "raster_types.hpp"
-#include "raster_casts_functions.hpp"
+#include "raster_casts.hpp"
 
 // DuckDB
 #include "duckdb/main/database.hpp"
@@ -41,7 +41,7 @@ struct RasterCasts {
 //  Register
 // ######################################################################################################################
 
-void GdalRasterCastsFunctions::Register(DatabaseInstance &db) {
+void RasterCastsFunctions::Register(DatabaseInstance &db) {
 	RasterCasts::Register(db);
 }
 

@@ -4,7 +4,7 @@ namespace duckdb {
 
 class DatabaseInstance;
 
-struct GdalRasterCastsFunctions {
+struct RasterCastsFunctions {
 public:
 	static void Register(DatabaseInstance &db);
 };

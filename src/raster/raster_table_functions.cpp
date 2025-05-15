@@ -691,7 +691,7 @@ struct RT_Write {
 //  Register Raster Table Functions
 // ######################################################################################################################
 
-void GdalRasterTableFunctions::Register(DatabaseInstance &db) {
+void RasterTableFunctions::Register(DatabaseInstance &db) {
 
 	// Register functions
 	RT_Drivers::Register(db);
