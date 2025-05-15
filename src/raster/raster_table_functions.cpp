@@ -14,8 +14,8 @@
 #include "spatial/util/function_builder.hpp"
 // GDAL
 #include "gdal_priv.h"
-#include "gdal_dataset_factory.hpp"
-#include "gdal_context_state.hpp"
+#include "modules/gdal/gdal_dataset_factory.hpp"
+#include "modules/gdal/gdal_context_state.hpp"
 
 namespace duckdb {
 

@@ -8,8 +8,8 @@
 #include "duckdb/main/extension_util.hpp"
 #include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
 
-#include "proj_module.hpp"
-#include "gdal_module.hpp"
+#include "modules/proj/proj_module.hpp"
+#include "modules/gdal/gdal_module.hpp"
 #include "raster_types.hpp"
 #include "raster_casts.hpp"
 #include "raster_table_functions.hpp"
