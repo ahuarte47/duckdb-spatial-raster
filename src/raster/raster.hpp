@@ -3,6 +3,8 @@
 #include <string>
 #include "raster_types.hpp"
 
+class GDALDataset;
+
 namespace duckdb {
 
 //! A wrapper of a GDALDataset with useful methods to manage raster data.

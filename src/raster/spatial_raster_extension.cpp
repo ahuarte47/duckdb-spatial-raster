@@ -13,6 +13,7 @@
 #include "raster_types.hpp"
 #include "raster_casts.hpp"
 #include "raster_table_functions.hpp"
+#include "functions/raster_scalar_functions.hpp"
 
 namespace duckdb {
 
@@ -30,8 +31,9 @@ static void LoadInternal(DatabaseInstance &instance) {
 	// Register the Table functions
 	RasterTableFunctions::Register(instance);
 
-	// Register the Casts functions
+	// Register other functions
 	RasterCastsFunctions::Register(instance);
+	RasterScalarFunctions::Register(instance);
 }
 
 void SpatialRasterExtension::Load(DuckDB &db) {

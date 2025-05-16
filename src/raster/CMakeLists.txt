@@ -1,4 +1,5 @@
 add_subdirectory(modules)
+add_subdirectory(functions)
 
 set(EXTENSION_SOURCES
     ${EXTENSION_SOURCES}
