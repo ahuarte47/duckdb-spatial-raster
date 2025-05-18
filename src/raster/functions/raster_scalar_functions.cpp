@@ -507,6 +507,76 @@ struct RT_WorldToRasterCoord {
 	}
 };
 
+//======================================================================================================================
+// RT_Value
+//======================================================================================================================
+
+struct RT_Value {
+	static void GetValue(DataChunk &args, ExpressionState &state, Vector &result) {
+		D_ASSERT(args.data.size() == 4);
+
+		using POINTER_TYPE = PrimitiveType<uintptr_t>;
+		using INT_TYPE = PrimitiveType<int32_t>;
+		using DOUBLE_TYPE = PrimitiveType<double>;
+
+		auto &p1 = args.data[0];
+		auto &p2 = args.data[1];
+		auto &p3 = args.data[2];
+		auto &p4 = args.data[3];
+
+		GenericExecutor::ExecuteQuaternary<POINTER_TYPE, INT_TYPE, INT_TYPE, INT_TYPE, DOUBLE_TYPE>(
+		    p1, p2, p3, p4, result, args.size(), [&](POINTER_TYPE p1, INT_TYPE p2, INT_TYPE p3, INT_TYPE p4) {
+			    auto input = p1.val;
+			    auto band_num = p2.val;
+			    auto col = p3.val;
+			    auto row = p4.val;
+
+			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    auto cols = dataset->GetRasterXSize();
+			    auto rows = dataset->GetRasterYSize();
+
+			    if (band_num < 1) {
+				    throw InvalidInputException("BandNum must be greater than 0");
+			    }
+			    if (dataset->GetRasterCount() < band_num) {
+				    throw InvalidInputException("Dataset only has %d RasterBands", dataset->GetRasterCount());
+			    }
+			    if (col < 0 || col >= cols || row < 0 || row >= rows) {
+				    throw InvalidInputException(
+				        "Attempting to get pixel value with out of range raster coordinates: (%d, %d)", col, row);
+			    }
+
+			    Raster raster(dataset);
+			    double value;
+			    if (raster.GetValue(value, band_num, col, row)) {
+				    return value;
+			    }
+			    throw InternalException("Failed attempting to get pixel value with raster coordinates: (%d, %d)", col,
+			                            row);
+		    });
+	}
+
+	static void Register(DatabaseInstance &db) {
+
+		FunctionBuilder::RegisterScalar(db, "RT_Value", [](ScalarFunctionBuilder &func) {
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.AddParameter("band", LogicalType::INTEGER);
+				variant.AddParameter("col", LogicalType::INTEGER);
+				variant.AddParameter("row", LogicalType::INTEGER);
+				variant.SetReturnType(LogicalType::DOUBLE);
+				variant.SetFunction(GetValue);
+			});
+			func.SetDescription(R"(
+				Returns the value of a given band in a given column, row pixel.
+				Band numbers start at 1 and band is assumed to be 1 if not specified.
+			)");
+			func.SetTag("ext", "spatial_raster");
+			func.SetTag("category", "properties");
+		});
+	}
+};
+
 } // namespace
 
 // ######################################################################################################################
@@ -518,6 +588,7 @@ void RasterScalarFunctions::Register(DatabaseInstance &db) {
 	RT_Properties::Register(db);
 	RT_RasterToWorldCoord::Register(db);
 	RT_WorldToRasterCoord::Register(db);
+	RT_Value::Register(db);
 }
 
 } // namespace duckdb
