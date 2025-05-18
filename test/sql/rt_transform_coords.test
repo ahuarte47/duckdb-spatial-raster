@@ -1,0 +1,15 @@
+require spatial_raster
+
+query IIIIII
+SELECT
+	RT_RasterToWorldCoord (raster, 0, 0) AS coord,
+	RT_RasterToWorldCoordX(raster, 0, 0) AS coord_x,
+	RT_RasterToWorldCoordY(raster, 0, 0) AS coord_y,
+	RT_WorldToRasterCoord (raster, RT_RasterToWorldCoordX(raster, 1, 2), RT_RasterToWorldCoordY(raster, 1, 2)) AS coord,
+	RT_WorldToRasterCoordX(raster, RT_RasterToWorldCoordX(raster, 1, 2), RT_RasterToWorldCoordY(raster, 1, 2)) AS col,
+	RT_WorldToRasterCoordY(raster, RT_RasterToWorldCoordX(raster, 1, 2), RT_RasterToWorldCoordY(raster, 1, 2)) AS row
+FROM
+	RT_Read('__WORKING_DIRECTORY__/test/data/mosaic/SCL.tif-land-clip00.tiff')
+;
+----
+POINT (541020 4796640)	541020.0	4796640.0	COORD (1, 2)	1	2

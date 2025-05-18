@@ -4,6 +4,7 @@
 // DuckDB
 #include "duckdb/main/database.hpp"
 #include "duckdb/main/extension_util.hpp"
+#include "duckdb/common/vector_operations/generic_executor.hpp"
 
 namespace duckdb {
 
@@ -25,6 +26,40 @@ struct RasterCasts {
 		return true;
 	}
 
+	//------------------------------------------------------------------------------
+	// RASTER_XY -> VARCHAR
+	//------------------------------------------------------------------------------
+
+	static bool PointXYToVarcharCast(Vector &source, Vector &result, idx_t count, CastParameters &parameters) {
+
+		using POINT_TYPE = StructTypeBinary<double_t, double_t>;
+		using VARCHAR_TYPE = PrimitiveType<string_t>;
+
+		GenericExecutor::ExecuteUnary<POINT_TYPE, VARCHAR_TYPE>(source, result, count, [&](POINT_TYPE &input) {
+			auto x = input.a_val;
+			auto y = input.b_val;
+			return StringVector::AddString(result, StringUtil::Format("POINT (%.f %.f)", x, y));
+		});
+		return true;
+	}
+
+	//------------------------------------------------------------------------------
+	// RASTER_COORD -> VARCHAR
+	//------------------------------------------------------------------------------
+
+	static bool CoordToVarcharCast(Vector &source, Vector &result, idx_t count, CastParameters &parameters) {
+
+		using COORD_TYPE = StructTypeBinary<int32_t, int32_t>;
+		using VARCHAR_TYPE = PrimitiveType<string_t>;
+
+		GenericExecutor::ExecuteUnary<COORD_TYPE, VARCHAR_TYPE>(source, result, count, [&](COORD_TYPE &input) {
+			auto col = input.a_val;
+			auto row = input.b_val;
+			return StringVector::AddString(result, StringUtil::Format("COORD (%d, %d)", col, row));
+		});
+		return true;
+	}
+
 	//------------------------------------------------------------------------------------------------------------------
 	// Register
 	//------------------------------------------------------------------------------------------------------------------
@@ -32,6 +67,13 @@ struct RasterCasts {
 	static void Register(DatabaseInstance &db) {
 		// RASTER -> VARCHAR
 		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER(), LogicalType::VARCHAR, RasterToVarcharCast, 1);
+
+		// RASTER_XY -> VARCHAR
+		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER_XY(), LogicalType::VARCHAR, PointXYToVarcharCast,
+		                                    1);
+		// RASTER_COORD -> VARCHAR
+		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER_COORD(), LogicalType::VARCHAR, CoordToVarcharCast,
+		                                    1);
 	}
 };
 

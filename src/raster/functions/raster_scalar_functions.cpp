@@ -4,6 +4,7 @@
 // DuckDB
 #include "duckdb/main/database.hpp"
 #include "duckdb/main/extension_util.hpp"
+#include "duckdb/common/vector_operations/generic_executor.hpp"
 // Spatial
 #include "spatial/util/function_builder.hpp"
 // GDAL
@@ -274,6 +275,238 @@ struct RT_Properties {
 	}
 };
 
+//======================================================================================================================
+// RT_RasterToWorldCoord[XY]
+//======================================================================================================================
+
+struct RT_RasterToWorldCoord {
+
+	static void RasterToWorldCoord(DataChunk &args, ExpressionState &state, Vector &result) {
+		D_ASSERT(args.data.size() == 3);
+
+		using POINTER_TYPE = PrimitiveType<uintptr_t>;
+		using INT_TYPE = PrimitiveType<int32_t>;
+		using POINT_TYPE = StructTypeBinary<double, double>;
+
+		auto &p1 = args.data[0];
+		auto &p2 = args.data[1];
+		auto &p3 = args.data[2];
+
+		GenericExecutor::ExecuteTernary<POINTER_TYPE, INT_TYPE, INT_TYPE, POINT_TYPE>(
+		    p1, p2, p3, result, args.size(), [&](POINTER_TYPE p1, INT_TYPE p2, INT_TYPE p3) {
+			    auto input = p1.val;
+			    auto col = p2.val;
+			    auto row = p3.val;
+			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+
+			    PointXY coord(0, 0);
+			    if (!raster.RasterToWorldCoord(coord, col, row)) {
+				    throw InternalException("Could not compute geotransform matrix");
+			    }
+			    return POINT_TYPE {coord.x, coord.y};
+		    });
+	}
+
+	static void RasterToWorldCoordX(DataChunk &args, ExpressionState &state, Vector &result) {
+		D_ASSERT(args.data.size() == 3);
+
+		TernaryExecutor::Execute<uintptr_t, int32_t, int32_t, double>(
+		    args.data[0], args.data[1], args.data[2], result, args.size(),
+		    [&](uintptr_t input, int32_t col, int32_t row) {
+			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+
+			    PointXY coord(0, 0);
+			    if (!raster.RasterToWorldCoord(coord, col, row)) {
+				    throw InternalException("Could not compute geotransform matrix");
+			    }
+			    return coord.x;
+		    });
+	}
+
+	static void RasterToWorldCoordY(DataChunk &args, ExpressionState &state, Vector &result) {
+		D_ASSERT(args.data.size() == 3);
+
+		TernaryExecutor::Execute<uintptr_t, int32_t, int32_t, double>(
+		    args.data[0], args.data[1], args.data[2], result, args.size(),
+		    [&](uintptr_t input, int32_t col, int32_t row) {
+			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+
+			    PointXY coord(0, 0);
+			    if (!raster.RasterToWorldCoord(coord, col, row)) {
+				    throw InternalException("Could not compute geotransform matrix");
+			    }
+			    return coord.y;
+		    });
+	}
+
+	static void Register(DatabaseInstance &db) {
+
+		FunctionBuilder::RegisterScalar(db, "RT_RasterToWorldCoord", [](ScalarFunctionBuilder &func) {
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.AddParameter("col", LogicalType::INTEGER);
+				variant.AddParameter("row", LogicalType::INTEGER);
+				variant.SetReturnType(RasterTypes::RASTER_XY());
+				variant.SetFunction(RasterToWorldCoord);
+			});
+			func.SetDescription(R"(
+				Returns the upper left corner as geometric X and Y (longitude and latitude) given a column and row.
+				Returned X and Y are in geometric units of the georeferenced raster.
+			)");
+			func.SetTag("ext", "spatial_raster");
+			func.SetTag("category", "properties");
+		});
+
+		FunctionBuilder::RegisterScalar(db, "RT_RasterToWorldCoordX", [](ScalarFunctionBuilder &func) {
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.AddParameter("col", LogicalType::INTEGER);
+				variant.AddParameter("row", LogicalType::INTEGER);
+				variant.SetReturnType(LogicalType::DOUBLE);
+				variant.SetFunction(RasterToWorldCoordX);
+			});
+			func.SetDescription(R"(
+				Returns the upper left X coordinate of a raster column row in geometric units of the georeferenced raster.
+				Returned X is in geometric units of the georeferenced raster.
+			)");
+			func.SetTag("ext", "spatial_raster");
+			func.SetTag("category", "properties");
+		});
+
+		FunctionBuilder::RegisterScalar(db, "RT_RasterToWorldCoordY", [](ScalarFunctionBuilder &func) {
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.AddParameter("col", LogicalType::INTEGER);
+				variant.AddParameter("row", LogicalType::INTEGER);
+				variant.SetReturnType(LogicalType::DOUBLE);
+				variant.SetFunction(RasterToWorldCoordY);
+			});
+			func.SetDescription(R"(
+				Returns the upper left Y coordinate of a raster column row in geometric units of the georeferenced raster.
+				Returned Y is in geometric units of the georeferenced raster.
+			)");
+			func.SetTag("ext", "spatial_raster");
+			func.SetTag("category", "properties");
+		});
+	}
+};
+
+//======================================================================================================================
+// RT_WorldToRasterCoord[XY]
+//======================================================================================================================
+
+struct RT_WorldToRasterCoord {
+
+	static void WorldToRasterCoord(DataChunk &args, ExpressionState &state, Vector &result) {
+		D_ASSERT(args.data.size() == 3);
+
+		using POINTER_TYPE = PrimitiveType<uintptr_t>;
+		using DOUBLE_TYPE = PrimitiveType<double_t>;
+		using COORD_TYPE = StructTypeBinary<int32_t, int32_t>;
+
+		auto &p1 = args.data[0];
+		auto &p2 = args.data[1];
+		auto &p3 = args.data[2];
+
+		GenericExecutor::ExecuteTernary<POINTER_TYPE, DOUBLE_TYPE, DOUBLE_TYPE, COORD_TYPE>(
+		    p1, p2, p3, result, args.size(), [&](POINTER_TYPE p1, DOUBLE_TYPE p2, DOUBLE_TYPE p3) {
+			    auto input = p1.val;
+			    auto x = p2.val;
+			    auto y = p3.val;
+			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+
+			    RasterCoord coord(0, 0);
+			    if (!raster.WorldToRasterCoord(coord, x, y)) {
+				    throw InternalException("Could not compute inverse geotransform matrix");
+			    }
+			    return COORD_TYPE {coord.col, coord.row};
+		    });
+	}
+
+	static void WorldToRasterCoordX(DataChunk &args, ExpressionState &state, Vector &result) {
+		D_ASSERT(args.data.size() == 3);
+
+		TernaryExecutor::Execute<uintptr_t, double_t, double_t, int32_t>(
+		    args.data[0], args.data[1], args.data[2], result, args.size(),
+		    [&](uintptr_t input, double_t x, double_t y) {
+			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+
+			    RasterCoord coord(0, 0);
+			    if (!raster.WorldToRasterCoord(coord, x, y)) {
+				    throw InternalException("Could not compute inverse geotransform matrix");
+			    }
+			    return coord.col;
+		    });
+	}
+
+	static void WorldToRasterCoordY(DataChunk &args, ExpressionState &state, Vector &result) {
+		D_ASSERT(args.data.size() == 3);
+
+		TernaryExecutor::Execute<uintptr_t, double_t, double_t, int32_t>(
+		    args.data[0], args.data[1], args.data[2], result, args.size(),
+		    [&](uintptr_t input, double_t x, double_t y) {
+			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+
+			    RasterCoord coord(0, 0);
+			    if (!raster.WorldToRasterCoord(coord, x, y)) {
+				    throw InternalException("Could not compute inverse geotransform matrix");
+			    }
+			    return coord.row;
+		    });
+	}
+
+	static void Register(DatabaseInstance &db) {
+
+		FunctionBuilder::RegisterScalar(db, "RT_WorldToRasterCoord", [](ScalarFunctionBuilder &func) {
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.AddParameter("x", LogicalType::DOUBLE);
+				variant.AddParameter("y", LogicalType::DOUBLE);
+				variant.SetReturnType(RasterTypes::RASTER_COORD());
+				variant.SetFunction(WorldToRasterCoord);
+			});
+			func.SetDescription(R"(
+				Returns the upper left corner as column and row given geometric X and Y (longitude and latitude).
+				Geometric X and Y must be expressed in the spatial reference coordinate system of the raster.
+			)");
+			func.SetTag("ext", "spatial_raster");
+			func.SetTag("category", "properties");
+		});
+
+		FunctionBuilder::RegisterScalar(db, "RT_WorldToRasterCoordX", [](ScalarFunctionBuilder &func) {
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.AddParameter("x", LogicalType::DOUBLE);
+				variant.AddParameter("y", LogicalType::DOUBLE);
+				variant.SetReturnType(LogicalType::INTEGER);
+				variant.SetFunction(WorldToRasterCoordX);
+			});
+			func.SetDescription(R"(
+				Returns the column in the raster given geometric X and Y (longitude and latitude).
+				Geometric X and Y must be expressed in the spatial reference coordinate system of the raster.
+			)");
+			func.SetTag("ext", "spatial_raster");
+			func.SetTag("category", "properties");
+		});
+
+		FunctionBuilder::RegisterScalar(db, "RT_WorldToRasterCoordY", [](ScalarFunctionBuilder &func) {
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.AddParameter("x", LogicalType::DOUBLE);
+				variant.AddParameter("y", LogicalType::DOUBLE);
+				variant.SetReturnType(LogicalType::INTEGER);
+				variant.SetFunction(WorldToRasterCoordY);
+			});
+			func.SetDescription(R"(
+				Returns the row in the raster given geometric X and Y (longitude and latitude).
+				Geometric X and Y must be expressed in the spatial reference coordinate system of the raster.
+			)");
+			func.SetTag("ext", "spatial_raster");
+			func.SetTag("category", "properties");
+		});
+	}
+};
+
 } // namespace
 
 // ######################################################################################################################
@@ -283,6 +516,8 @@ struct RT_Properties {
 void RasterScalarFunctions::Register(DatabaseInstance &db) {
 	RT_Srid::Register(db);
 	RT_Properties::Register(db);
+	RT_RasterToWorldCoord::Register(db);
+	RT_WorldToRasterCoord::Register(db);
 }
 
 } // namespace duckdb
