@@ -1,0 +1,14 @@
+require spatial_raster
+
+query IIIII
+SELECT
+	RT_Value(raster, 1, (RT_Width(raster) / 2)::INT, (RT_Height(raster) / 2)::INT) AS valCC,
+	RT_Value(raster, 1, 0, 0) AS val00,
+	RT_Value(raster, 1, RT_Width(raster) - 1, 0) AS val10,
+	RT_Value(raster, 1, RT_Width(raster) - 1, RT_Height(raster) - 1) AS val11,
+	RT_Value(raster, 1, 0, RT_Height(raster) - 1) AS val01
+FROM
+	RT_Read('__WORKING_DIRECTORY__/test/data/mosaic/SCL.tif-land-clip00.tiff')
+;
+----
+1.0	-9999.0	-9999.0	15.0	-9999.0
