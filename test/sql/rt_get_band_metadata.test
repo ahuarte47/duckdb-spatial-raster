@@ -1,0 +1,17 @@
+require spatial_raster
+
+query IIIIIIII
+SELECT
+	RT_HasNoBand(raster, 1) AS hb1,
+	RT_HasNoBand(raster, 2) AS hb2,
+	RT_HasNoBand(raster, 3) AS hb3,
+	RT_GetBandPixelType(raster, 1) AS pxt1,
+	RT_GetBandPixelTypeName(raster, 1) AS pxtn1,
+	RT_GetBandNoDataValue(raster, 1) AS ndv1,
+	RT_GetBandColorInterpretation(raster, 1) AS ci1,
+	RT_GetBandColorInterpretationName(raster, 1) AS cin1
+FROM
+	RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+;
+----
+1	0	0	3	Int16	-9999.0	1	Greyscale
