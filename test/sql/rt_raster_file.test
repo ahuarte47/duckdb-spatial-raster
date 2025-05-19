@@ -1,0 +1,14 @@
+require spatial_raster
+
+statement ok
+WITH __input AS (
+	SELECT
+		RT_RasterFromFile(file) AS raster
+	FROM
+		glob('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+)
+SELECT
+	RT_RasterAsFile(raster, '__TEST_DIR__/rasterasfile.tiff', 'Gtiff') AS result
+FROM
+	__input
+;

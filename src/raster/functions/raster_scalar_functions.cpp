@@ -19,6 +19,7 @@ namespace {
 //======================================================================================================================
 
 struct RT_Srid {
+
 	static void GetSrid(DataChunk &args, ExpressionState &state, Vector &result) {
 
 		UnaryExecutor::Execute<uintptr_t, int32_t>(args.data[0], result, args.size(), [&](uintptr_t input) {
@@ -50,6 +51,7 @@ struct RT_Srid {
 //======================================================================================================================
 
 struct RT_Properties {
+
 	static void GetWidth(DataChunk &args, ExpressionState &state, Vector &result) {
 
 		UnaryExecutor::Execute<uintptr_t, int32_t>(args.data[0], result, args.size(), [&](uintptr_t input) {
@@ -512,6 +514,7 @@ struct RT_WorldToRasterCoord {
 //======================================================================================================================
 
 struct RT_Value {
+
 	static void GetValue(DataChunk &args, ExpressionState &state, Vector &result) {
 		D_ASSERT(args.data.size() == 4);
 
