@@ -14,7 +14,7 @@ SELECT
 	RT_PixelWidth(raster) AS px_width,
 	RT_PixelHeight(raster) AS px_height
 FROM
-	RT_Read('__WORKING_DIRECTORY__/test/data/mosaic/SCL.tif-land-clip00.tiff')
+	RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
 ;
 ----
 3438	5322	1	541020.0	4796640.0	20.0	-20.0	0.0	0.0	20.0	20.0

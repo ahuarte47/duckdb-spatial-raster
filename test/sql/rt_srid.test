@@ -4,7 +4,7 @@ query I
 SELECT
 	RT_Srid(raster) AS srid
 FROM
-	RT_Read('__WORKING_DIRECTORY__/test/data/mosaic/SCL.tif-land-clip00.tiff')
+	RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
 ;
 ----
 32630

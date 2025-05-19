@@ -2,7 +2,7 @@ require spatial_raster
 
 statement ok
 COPY (
-	SELECT * FROM '__WORKING_DIRECTORY__/test/data/mosaic/SCL.tif-land-clip00.tiff'
+	SELECT * FROM './test/data/mosaic/SCL.tif-land-clip00.tiff'
 )
 TO
 	'__TEST_DIR__/copytoraster.tiff'
