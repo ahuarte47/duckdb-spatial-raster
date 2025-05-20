@@ -50,6 +50,10 @@ public:
 	//! Returns the value of a given band in a given col and row pixel
 	bool GetValue(double &value, int32_t band_num, int32_t col, int32_t row) const;
 
+	//! Performs mosaicing, reprojection and/or warping on a raster
+	static GDALDataset *Warp(GDALDataset *dataset,
+	                         const std::vector<std::string> &options = std::vector<std::string>());
+
 public:
 	//! Returns the geometric X and Y (longitude and latitude) given a column and row
 	static bool RasterToWorldCoord(PointXY &point, double matrix[], int32_t col, int32_t row);

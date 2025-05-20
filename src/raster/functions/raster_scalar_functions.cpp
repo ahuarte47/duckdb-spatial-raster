@@ -9,6 +9,7 @@
 #include "spatial/util/function_builder.hpp"
 // GDAL
 #include "gdal_priv.h"
+#include "../modules/gdal/gdal_context_state.hpp"
 
 namespace duckdb {
 
@@ -580,6 +581,73 @@ struct RT_Value {
 	}
 };
 
+//======================================================================================================================
+// RT_RasterWarp
+//======================================================================================================================
+
+struct RT_RasterWarp {
+
+	static void RasterWarp(DataChunk &args, ExpressionState &state, Vector &result) {
+		auto &context = state.GetContext();
+		auto &ctx_state = GDALClientContextState::GetOrCreate(context);
+
+		using POINTER_TYPE = PrimitiveType<uintptr_t>;
+		using LIST_TYPE = PrimitiveType<list_entry_t>;
+
+		auto &p1 = args.data[0];
+		auto &p2 = args.data[1];
+		auto &p2_entry = ListVector::GetEntry(p2);
+
+		GenericExecutor::ExecuteBinary<POINTER_TYPE, LIST_TYPE, POINTER_TYPE>(
+		    p1, p2, result, args.size(), [&](POINTER_TYPE p1, LIST_TYPE p2_offlen) {
+			    auto input = p1.val;
+			    auto offlen = p2_offlen.val;
+
+			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+
+			    if (dataset->GetRasterCount() == 0) {
+				    throw InvalidInputException("Input Raster has no RasterBands");
+			    }
+
+			    auto options = std::vector<std::string>();
+
+			    for (idx_t i = offlen.offset; i < offlen.offset + offlen.length; i++) {
+				    const auto &child_value = p2_entry.GetValue(i);
+				    const auto option = child_value.ToString();
+				    options.emplace_back(option);
+			    }
+
+			    GDALDataset *result = Raster::Warp(dataset, options);
+
+			    if (result == nullptr) {
+				    auto error = Raster::GetLastErrorMsg();
+				    throw IOException("Could not warp raster (" + error + ")");
+			    }
+
+			    ctx_state.GetDatasetRegistry(context).RegisterDataset(result);
+			    return CastPointerToValue(result);
+		    });
+	}
+
+	static void Register(DatabaseInstance &db) {
+
+		FunctionBuilder::RegisterScalar(db, "RT_RasterWarp", [](ScalarFunctionBuilder &func) {
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.AddParameter("options", LogicalType::LIST(LogicalType::VARCHAR));
+				variant.SetReturnType(RasterTypes::RASTER());
+				variant.SetFunction(RasterWarp);
+			});
+			func.SetDescription(R"(
+				Performs mosaicing, reprojection and/or warping on a raster.
+				`options` is optional, an array of parameters like [GDALWarp](https://gdal.org/programs/gdalwarp.html).
+			)");
+			func.SetTag("ext", "spatial_raster");
+			func.SetTag("category", "properties");
+		});
+	}
+};
+
 } // namespace
 
 // ######################################################################################################################
@@ -592,6 +660,7 @@ void RasterScalarFunctions::Register(DatabaseInstance &db) {
 	RT_RasterToWorldCoord::Register(db);
 	RT_WorldToRasterCoord::Register(db);
 	RT_Value::Register(db);
+	RT_RasterWarp::Register(db);
 }
 
 } // namespace duckdb

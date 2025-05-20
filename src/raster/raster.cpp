@@ -1,5 +1,10 @@
-#include "gdal_priv.h"
 #include "raster.hpp"
+
+// DuckDB
+#include "duckdb/common/types/uuid.hpp"
+// GDAL
+#include "gdal_priv.h"
+#include "gdal_utils.h"
 #include <float.h> /* for FLT_EPSILON */
 
 namespace duckdb {
@@ -125,6 +130,41 @@ bool Raster::GetValue(double &value, int32_t band_num, int32_t col, int32_t row)
 		return true;
 	}
 	return false;
+}
+
+GDALDataset *Raster::Warp(GDALDataset *dataset, const std::vector<std::string> &options) {
+
+	GDALDatasetH hDataset = GDALDataset::ToHandle(dataset);
+
+	auto driver = GetGDALDriverManager()->GetDriverByName("MEM");
+	if (!driver) {
+		throw InvalidInputException("Unknown driver 'MEM'");
+	}
+
+	char **papszArgv = nullptr;
+	papszArgv = CSLAddString(papszArgv, "-of");
+	papszArgv = CSLAddString(papszArgv, "MEM");
+
+	for (auto it = options.begin(); it != options.end(); ++it) {
+		papszArgv = CSLAddString(papszArgv, (*it).c_str());
+	}
+
+	CPLErrorReset();
+
+	GDALWarpAppOptions *psOptions = GDALWarpAppOptionsNew(papszArgv, nullptr);
+	CSLDestroy(papszArgv);
+
+	auto ds_name = UUID::ToString(UUID::GenerateRandomUUID());
+
+	auto result = GDALDatasetUniquePtr(
+	    GDALDataset::FromHandle(GDALWarp(ds_name.c_str(), nullptr, 1, &hDataset, psOptions, nullptr)));
+
+	GDALWarpAppOptionsFree(psOptions);
+
+	if (result.get() != nullptr) {
+		result->FlushCache();
+	}
+	return result.release();
 }
 
 std::string Raster::GetLastErrorMsg() {

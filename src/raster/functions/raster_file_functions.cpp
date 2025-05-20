@@ -24,9 +24,9 @@ struct RT_File {
 
 	static void RasterFromFile(DataChunk &args, ExpressionState &state, Vector &result) {
 		auto &context = state.GetContext();
+		auto &ctx_state = GDALClientContextState::GetOrCreate(context);
 
 		UnaryExecutor::Execute<string_t, uintptr_t>(args.data[0], result, args.size(), [&](string_t input) {
-			auto &ctx_state = GDALClientContextState::GetOrCreate(context);
 			auto raw_file_name = input.GetString();
 
 			GDALDataset *dataset = GDALDatasetFactory::FromFile(raw_file_name);
