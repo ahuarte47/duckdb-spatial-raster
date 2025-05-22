@@ -2,6 +2,7 @@
 
 #include <string>
 #include "raster_types.hpp"
+#include "../spatial/spatial_types.hpp"
 
 class GDALDataset;
 
@@ -42,7 +43,7 @@ public:
 	bool GetInvGeoTransform(double *inv_matrix) const;
 
 	//! Returns the geometric X and Y (longitude and latitude) given a column and row
-	bool RasterToWorldCoord(PointXY &point, int32_t col, int32_t row) const;
+	bool RasterToWorldCoord(Point2D &point, int32_t col, int32_t row) const;
 
 	//! Returns the upper left corner as column and row given geometric X and Y
 	bool WorldToRasterCoord(RasterCoord &coord, double x, double y) const;
@@ -56,7 +57,7 @@ public:
 
 public:
 	//! Returns the geometric X and Y (longitude and latitude) given a column and row
-	static bool RasterToWorldCoord(PointXY &point, double matrix[], int32_t col, int32_t row);
+	static bool RasterToWorldCoord(Point2D &point, double matrix[], int32_t col, int32_t row);
 
 	//! Returns the upper left corner as column and row given geometric X and Y
 	static bool WorldToRasterCoord(RasterCoord &coord, double inv_matrix[], double x, double y);

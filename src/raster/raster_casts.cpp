@@ -26,26 +26,9 @@ struct RasterCasts {
 		return true;
 	}
 
-	//------------------------------------------------------------------------------
-	// RASTER_XY -> VARCHAR
-	//------------------------------------------------------------------------------
-
-	static bool PointXYToVarcharCast(Vector &source, Vector &result, idx_t count, CastParameters &parameters) {
-
-		using POINT_TYPE = StructTypeBinary<double_t, double_t>;
-		using VARCHAR_TYPE = PrimitiveType<string_t>;
-
-		GenericExecutor::ExecuteUnary<POINT_TYPE, VARCHAR_TYPE>(source, result, count, [&](POINT_TYPE &input) {
-			auto x = input.a_val;
-			auto y = input.b_val;
-			return StringVector::AddString(result, StringUtil::Format("POINT (%.f %.f)", x, y));
-		});
-		return true;
-	}
-
-	//------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------------------
 	// RASTER_COORD -> VARCHAR
-	//------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------------------
 
 	static bool CoordToVarcharCast(Vector &source, Vector &result, idx_t count, CastParameters &parameters) {
 
@@ -68,9 +51,6 @@ struct RasterCasts {
 		// RASTER -> VARCHAR
 		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER(), LogicalType::VARCHAR, RasterToVarcharCast, 1);
 
-		// RASTER_XY -> VARCHAR
-		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER_XY(), LogicalType::VARCHAR, PointXYToVarcharCast,
-		                                    1);
 		// RASTER_COORD -> VARCHAR
 		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER_COORD(), LogicalType::VARCHAR, CoordToVarcharCast,
 		                                    1);

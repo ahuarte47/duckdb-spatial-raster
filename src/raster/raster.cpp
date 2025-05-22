@@ -69,13 +69,13 @@ bool Raster::GetInvGeoTransform(double *inv_matrix) const {
 	return true;
 }
 
-bool Raster::RasterToWorldCoord(PointXY &point, int32_t col, int32_t row) const {
+bool Raster::RasterToWorldCoord(Point2D &point, int32_t col, int32_t row) const {
 	double gt[6] = {0};
 	GetGeoTransform(gt);
 	return Raster::RasterToWorldCoord(point, gt, col, row);
 }
 
-bool Raster::RasterToWorldCoord(PointXY &point, double matrix[], int32_t col, int32_t row) {
+bool Raster::RasterToWorldCoord(Point2D &point, double matrix[], int32_t col, int32_t row) {
 	point.x = matrix[0] + matrix[1] * col + matrix[2] * row;
 	point.y = matrix[3] + matrix[4] * col + matrix[5] * row;
 	return true;

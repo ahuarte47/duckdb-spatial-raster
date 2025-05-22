@@ -16,6 +16,8 @@
 #include "functions/raster_band_functions.hpp"
 #include "functions/raster_scalar_functions.hpp"
 #include "functions/raster_file_functions.hpp"
+#include "../spatial/spatial_types.hpp"
+#include "../spatial/spatial_casts.hpp"
 
 namespace duckdb {
 
@@ -38,6 +40,10 @@ static void LoadInternal(DatabaseInstance &instance) {
 	RasterBandFunctions::Register(instance);
 	RasterScalarFunctions::Register(instance);
 	RasterFileFunctions::Register(instance);
+
+	// Register the spatial types
+	GeoTypes::Register(instance);
+	SpatialCastsFunctions::Register(instance);
 }
 
 void SpatialRasterExtension::Load(DuckDB &db) {

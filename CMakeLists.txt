@@ -26,6 +26,7 @@ endif()
 include_directories(src/include)
 include_directories(duckdb-spatial/src)
 add_subdirectory(src/raster)
+add_subdirectory(src/spatial)
 
 add_library(${EXTENSION_NAME} STATIC ${EXTENSION_SOURCES})
 

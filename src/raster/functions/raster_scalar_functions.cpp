@@ -1,5 +1,6 @@
 #include "raster_scalar_functions.hpp"
 #include "../raster.hpp"
+#include "../../spatial/spatial_types.hpp"
 
 // DuckDB
 #include "duckdb/main/database.hpp"
@@ -302,7 +303,7 @@ struct RT_RasterToWorldCoord {
 			    auto row = p3.val;
 			    Raster raster(reinterpret_cast<GDALDataset *>(input));
 
-			    PointXY coord(0, 0);
+			    Point2D coord(0, 0);
 			    if (!raster.RasterToWorldCoord(coord, col, row)) {
 				    throw InternalException("Could not compute geotransform matrix");
 			    }
@@ -318,7 +319,7 @@ struct RT_RasterToWorldCoord {
 		    [&](uintptr_t input, int32_t col, int32_t row) {
 			    Raster raster(reinterpret_cast<GDALDataset *>(input));
 
-			    PointXY coord(0, 0);
+			    Point2D coord(0, 0);
 			    if (!raster.RasterToWorldCoord(coord, col, row)) {
 				    throw InternalException("Could not compute geotransform matrix");
 			    }
@@ -334,7 +335,7 @@ struct RT_RasterToWorldCoord {
 		    [&](uintptr_t input, int32_t col, int32_t row) {
 			    Raster raster(reinterpret_cast<GDALDataset *>(input));
 
-			    PointXY coord(0, 0);
+			    Point2D coord(0, 0);
 			    if (!raster.RasterToWorldCoord(coord, col, row)) {
 				    throw InternalException("Could not compute geotransform matrix");
 			    }
@@ -349,7 +350,7 @@ struct RT_RasterToWorldCoord {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("col", LogicalType::INTEGER);
 				variant.AddParameter("row", LogicalType::INTEGER);
-				variant.SetReturnType(RasterTypes::RASTER_XY());
+				variant.SetReturnType(GeoTypes::POINT_2D());
 				variant.SetFunction(RasterToWorldCoord);
 			});
 			func.SetDescription(R"(
