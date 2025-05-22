@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gdal_priv.h"
+#include <mutex>
 
 namespace duckdb {
 
@@ -18,6 +19,7 @@ public:
 
 private:
 	std::vector<GDALDatasetUniquePtr> datasets_;
+	std::mutex lock_;
 };
 
 } // namespace duckdb

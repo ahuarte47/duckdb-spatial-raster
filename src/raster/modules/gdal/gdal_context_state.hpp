@@ -21,7 +21,7 @@ public:
 	static GDALClientContextState &GetOrCreate(ClientContext &context);
 
 	//! Get the registry where collecting GDALDatasets
-	GDALDatasetRegistry &GetDatasetRegistry(ClientContext &context);
+	GDALDatasetRegistry &GetDatasetRegistry();
 };
 
 } // namespace duckdb

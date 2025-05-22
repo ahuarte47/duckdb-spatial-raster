@@ -225,7 +225,7 @@ struct RT_Read {
 		}
 
 		// Now we can bind the dataset
-		ctx_state.GetDatasetRegistry(context).RegisterDataset(dataset);
+		ctx_state.GetDatasetRegistry().RegisterDataset(dataset);
 		bind_data.loaded = true;
 
 		// And fill the output

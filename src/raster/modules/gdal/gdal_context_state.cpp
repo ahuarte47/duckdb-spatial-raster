@@ -15,7 +15,7 @@ void GDALClientContextState::QueryEnd(ClientContext &context) {
 	context.registered_state->Remove(k);
 }
 
-GDALDatasetRegistry &GDALClientContextState::GetDatasetRegistry(ClientContext &context) {
+GDALDatasetRegistry &GDALClientContextState::GetDatasetRegistry() {
 	return registry;
 }
 

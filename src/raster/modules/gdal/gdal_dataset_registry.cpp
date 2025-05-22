@@ -15,6 +15,7 @@ GDALDatasetRegistry::~GDALDatasetRegistry() {
 }
 
 void GDALDatasetRegistry::RegisterDataset(GDALDataset *dataset) {
+	std::lock_guard<std::mutex> guard(lock_);
 	datasets_.emplace_back(GDALDatasetUniquePtr(dataset));
 }
 

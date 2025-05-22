@@ -624,7 +624,7 @@ struct RT_RasterWarp {
 				    throw IOException("Could not warp raster (" + error + ")");
 			    }
 
-			    ctx_state.GetDatasetRegistry(context).RegisterDataset(result);
+			    ctx_state.GetDatasetRegistry().RegisterDataset(result);
 			    return CastPointerToValue(result);
 		    });
 	}

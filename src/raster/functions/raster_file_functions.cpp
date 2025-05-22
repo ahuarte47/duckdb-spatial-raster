@@ -35,7 +35,7 @@ struct RT_File {
 				throw IOException("Could not open file: " + raw_file_name + " (" + error + ")");
 			}
 
-			ctx_state.GetDatasetRegistry(context).RegisterDataset(dataset);
+			ctx_state.GetDatasetRegistry().RegisterDataset(dataset);
 			return CastPointerToValue(dataset);
 		});
 	}
