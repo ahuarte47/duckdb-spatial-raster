@@ -23,10 +23,12 @@ if(EMSCRIPTEN
   set(SPATIAL_USE_NETWORK OFF)
 endif()
 
+include_directories(src)
 include_directories(src/include)
+include_directories(src/raster)
 include_directories(duckdb-spatial/src)
 add_subdirectory(src/raster)
-add_subdirectory(src/spatial)
+add_subdirectory(src/spatial_r)
 
 add_library(${EXTENSION_NAME} STATIC ${EXTENSION_SOURCES})
 

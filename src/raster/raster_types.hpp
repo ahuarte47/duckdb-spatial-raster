@@ -2,6 +2,7 @@
 
 #include "duckdb/common/string.hpp"
 #include "duckdb/common/vector.hpp"
+#include "spatial_r/spatial_types.hpp"
 
 namespace duckdb {
 

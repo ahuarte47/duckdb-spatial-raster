@@ -2,9 +2,12 @@
 
 // DuckDB
 #include "duckdb/common/types/uuid.hpp"
+// Spatial
+#include "spatial/geometry/wkb_writer.hpp"
 // GDAL
 #include "gdal_priv.h"
 #include "gdal_utils.h"
+#include "gdalwarper.h"
 #include <float.h> /* for FLT_EPSILON */
 
 namespace duckdb {
@@ -42,6 +45,46 @@ int32_t Raster::GetSrid() const {
 		}
 	}
 	return srid;
+}
+
+static Point2D rasterToWorldVertex(double matrix[], int32_t col, int32_t row) {
+	double xgeo = matrix[0] + matrix[1] * col + matrix[2] * row;
+	double ygeo = matrix[3] + matrix[4] * col + matrix[5] * row;
+	return Point2D {xgeo, ygeo};
+}
+
+BBox2D Raster::GetBoundingBox() const {
+	auto cols = dataset_->GetRasterXSize();
+	auto rows = dataset_->GetRasterYSize();
+
+	double gt[6] = {0};
+	GetGeoTransform(gt);
+
+	Point2D vertex1 = rasterToWorldVertex(gt, 0, 0);
+	Point2D vertex2 = rasterToWorldVertex(gt, cols, rows);
+	double minx = std::min(vertex1.x, vertex2.x);
+	double miny = std::min(vertex1.y, vertex2.y);
+	double maxx = std::max(vertex1.x, vertex2.x);
+	double maxy = std::max(vertex1.y, vertex2.y);
+
+	return BBox2D(Point2D(minx, miny), Point2D(maxx, maxy));
+}
+
+Boundary2D Raster::GetGeometry() const {
+	auto cols = dataset_->GetRasterXSize();
+	auto rows = dataset_->GetRasterYSize();
+
+	double gt[6] = {0};
+	GetGeoTransform(gt);
+
+	Point2D vertex1 = rasterToWorldVertex(gt, 0, rows);
+	Point2D vertex2 = rasterToWorldVertex(gt, 0, 0);
+	Point2D vertex3 = rasterToWorldVertex(gt, cols, 0);
+	Point2D vertex4 = rasterToWorldVertex(gt, cols, rows);
+	Point2D vertex5 = vertex1;
+
+	std::array<Point2D, 5> points = {vertex1, vertex2, vertex3, vertex4, vertex5};
+	return Boundary2D(points);
 }
 
 bool Raster::GetGeoTransform(double *matrix) const {
@@ -132,6 +175,30 @@ bool Raster::GetValue(double &value, int32_t band_num, int32_t col, int32_t row)
 	return false;
 }
 
+GDALDataset *Raster::BuildVRT(const std::vector<GDALDataset *> &datasets, const std::vector<std::string> &options) {
+
+	char **papszArgv = nullptr;
+
+	for (auto it = options.begin(); it != options.end(); ++it) {
+		papszArgv = CSLAddString(papszArgv, (*it).c_str());
+	}
+
+	CPLErrorReset();
+
+	GDALBuildVRTOptions *psOptions = GDALBuildVRTOptionsNew(papszArgv, nullptr);
+	CSLDestroy(papszArgv);
+
+	auto result = GDALDatasetUniquePtr(GDALDataset::FromHandle(
+	    GDALBuildVRT(nullptr, datasets.size(), (GDALDatasetH *)&datasets[0], nullptr, psOptions, nullptr)));
+
+	GDALBuildVRTOptionsFree(psOptions);
+
+	if (result.get() != nullptr) {
+		result->FlushCache();
+	}
+	return result.release();
+}
+
 GDALDataset *Raster::Warp(GDALDataset *dataset, const std::vector<std::string> &options) {
 
 	GDALDatasetH hDataset = GDALDataset::ToHandle(dataset);
@@ -147,6 +214,123 @@ GDALDataset *Raster::Warp(GDALDataset *dataset, const std::vector<std::string> &
 
 	for (auto it = options.begin(); it != options.end(); ++it) {
 		papszArgv = CSLAddString(papszArgv, (*it).c_str());
+	}
+
+	CPLErrorReset();
+
+	GDALWarpAppOptions *psOptions = GDALWarpAppOptionsNew(papszArgv, nullptr);
+	CSLDestroy(papszArgv);
+
+	auto ds_name = UUID::ToString(UUID::GenerateRandomUUID());
+
+	auto result = GDALDatasetUniquePtr(
+	    GDALDataset::FromHandle(GDALWarp(ds_name.c_str(), nullptr, 1, &hDataset, psOptions, nullptr)));
+
+	GDALWarpAppOptionsFree(psOptions);
+
+	if (result.get() != nullptr) {
+		result->FlushCache();
+	}
+	return result.release();
+}
+
+//! Transformer of Geometries to pixel/line coordinates
+class CutlineTransformer : public OGRCoordinateTransformation {
+public:
+	void *hTransformArg = nullptr;
+
+	explicit CutlineTransformer(void *hTransformArg) : hTransformArg(hTransformArg) {
+	}
+	virtual ~CutlineTransformer() {
+		GDALDestroyTransformer(hTransformArg);
+	}
+
+	virtual const OGRSpatialReference *GetSourceCS() const override {
+		return nullptr;
+	}
+	virtual const OGRSpatialReference *GetTargetCS() const override {
+		return nullptr;
+	}
+	virtual OGRCoordinateTransformation *Clone() const override {
+		return nullptr;
+	}
+	virtual OGRCoordinateTransformation *GetInverse() const override {
+		return nullptr;
+	}
+
+	virtual int Transform(int nCount, double *x, double *y, double *z, double * /* t */, int *pabSuccess) override {
+		return GDALGenImgProjTransform(hTransformArg, TRUE, nCount, x, y, z, pabSuccess);
+	}
+};
+
+GDALDataset *Raster::Clip(GDALDataset *dataset, const geometry_t &geometry, const std::vector<std::string> &options) {
+
+	GDALDatasetH hDataset = GDALDataset::ToHandle(dataset);
+
+	auto driver = GetGDALDriverManager()->GetDriverByName("MEM");
+	if (!driver) {
+		throw InvalidInputException("Unknown driver 'MEM'");
+	}
+
+	char **papszArgv = nullptr;
+	papszArgv = CSLAddString(papszArgv, "-of");
+	papszArgv = CSLAddString(papszArgv, "MEM");
+
+	for (auto it = options.begin(); it != options.end(); ++it) {
+		papszArgv = CSLAddString(papszArgv, (*it).c_str());
+	}
+
+	// Add Bounds & Geometry in pixel/line coordinates to the options.
+	if (geometry.GetType() == GeometryType::POLYGON || geometry.GetType() == GeometryType::MULTIPOLYGON) {
+
+		OGRGeometryUniquePtr ogr_geom;
+
+		OGRSpatialReference srs;
+		srs.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
+		const char *proj_ref = dataset->GetProjectionRef();
+		if (proj_ref) {
+			srs.importFromWkt(&proj_ref, nullptr);
+		}
+
+		vector<data_t> buffer;
+		WKBWriter::Write(geometry, buffer);
+
+		OGRGeometry *ptr_geom = nullptr;
+		if (OGRGeometryFactory::createFromWkb(buffer.data(), &srs, &ptr_geom, buffer.size(), wkbVariantIso) !=
+		    OGRERR_NONE) {
+			CSLDestroy(papszArgv);
+			throw InvalidInputException("Input Geometry could not imported");
+		} else {
+			ogr_geom = OGRGeometryUniquePtr(ptr_geom);
+		}
+
+		OGREnvelope envelope;
+		ogr_geom->getEnvelope(&envelope);
+
+		CutlineTransformer transformer(GDALCreateGenImgProjTransformer2(hDataset, nullptr, nullptr));
+
+		if (ogr_geom->transform(&transformer) != OGRERR_NONE) {
+			CSLDestroy(papszArgv);
+			throw InvalidInputException("Transform of geometry to pixel/line coordinates failed");
+		}
+
+		char *pszWkt = nullptr;
+		if (ogr_geom->exportToWkt(&pszWkt) != OGRERR_NONE) {
+			CSLDestroy(papszArgv);
+			CPLFree(pszWkt);
+			throw InvalidInputException("Input Geometry could not loaded");
+		}
+		std::string wkt_geom = pszWkt;
+		CPLFree(pszWkt);
+
+		std::string wkt_option = "CUTLINE=" + wkt_geom;
+		papszArgv = CSLAddString(papszArgv, "-wo");
+		papszArgv = CSLAddString(papszArgv, wkt_option.c_str());
+		papszArgv = CSLAddString(papszArgv, "-te");
+		papszArgv = CSLAddString(papszArgv, MathUtil::format_coord(envelope.MinX).c_str());
+		papszArgv = CSLAddString(papszArgv, MathUtil::format_coord(envelope.MinY).c_str());
+		papszArgv = CSLAddString(papszArgv, MathUtil::format_coord(envelope.MaxX).c_str());
+		papszArgv = CSLAddString(papszArgv, MathUtil::format_coord(envelope.MaxY).c_str());
 	}
 
 	CPLErrorReset();

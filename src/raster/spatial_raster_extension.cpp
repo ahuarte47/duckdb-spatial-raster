@@ -16,8 +16,8 @@
 #include "functions/raster_band_functions.hpp"
 #include "functions/raster_scalar_functions.hpp"
 #include "functions/raster_file_functions.hpp"
-#include "../spatial/spatial_types.hpp"
-#include "../spatial/spatial_casts.hpp"
+#include "spatial_r/spatial_types.hpp"
+#include "spatial_r/spatial_casts.hpp"
 
 namespace duckdb {
 

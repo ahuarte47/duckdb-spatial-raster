@@ -1,10 +1,17 @@
 #include "raster_types.hpp"
 #include "raster_casts.hpp"
+#include "raster.hpp"
 
 // DuckDB
 #include "duckdb/main/database.hpp"
 #include "duckdb/main/extension_util.hpp"
 #include "duckdb/common/vector_operations/generic_executor.hpp"
+// Spatial
+#include "spatial_r/spatial_types.hpp"
+#include "spatial/geometry/geometry_serialization.hpp"
+#include "spatial/geometry/sgl.hpp"
+// GDAL
+#include "gdal_priv.h"
 
 namespace duckdb {
 
@@ -23,6 +30,38 @@ struct RasterCasts {
 	static bool RasterToVarcharCast(Vector &source, Vector &result, idx_t count, CastParameters &parameters) {
 		UnaryExecutor::Execute<uintptr_t, string_t>(source, result, count,
 		                                            [&](uintptr_t &input) { return string_t("RASTER"); });
+		return true;
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	// RASTER -> GEOMETRY
+	//------------------------------------------------------------------------------------------------------------------
+
+	static bool RasterToGeometryCast(Vector &source, Vector &result, idx_t count, CastParameters &parameters) {
+
+		UnaryExecutor::Execute<uintptr_t, string_t>(source, result, count, [&](uintptr_t &input) {
+			Raster raster(reinterpret_cast<GDALDataset *>(input));
+			Boundary2D boundary = raster.GetGeometry();
+
+			// We can create the geometry polygon directly on the stack.
+			double buffer[10];
+			double *buffer_p = buffer;
+			for (const auto &point : boundary.points) {
+				*buffer_p++ = point.x;
+				*buffer_p++ = point.y;
+			}
+			sgl::geometry ring(sgl::geometry_type::LINESTRING, false, false);
+			ring.set_vertex_data(reinterpret_cast<const char *>(buffer), 5);
+			sgl::geometry polygon(sgl::geometry_type::POLYGON, false, false);
+			polygon.append_part(&ring);
+
+			// Serialize the geometry into a blob
+			const auto size = Serde::GetRequiredSize(polygon);
+			auto blob = StringVector::EmptyString(result, size);
+			Serde::Serialize(polygon, blob.GetDataWriteable(), size);
+			blob.Finalize();
+			return blob;
+		});
 		return true;
 	}
 
@@ -50,6 +89,9 @@ struct RasterCasts {
 	static void Register(DatabaseInstance &db) {
 		// RASTER -> VARCHAR
 		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER(), LogicalType::VARCHAR, RasterToVarcharCast, 1);
+
+		// RASTER -> GEOMETRY
+		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER(), GeoTypes::GEOMETRY(), RasterToGeometryCast, 1);
 
 		// RASTER_COORD -> VARCHAR
 		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER_COORD(), LogicalType::VARCHAR, CoordToVarcharCast,

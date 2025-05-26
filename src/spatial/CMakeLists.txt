@@ -1,5 +1,0 @@
-set(EXTENSION_SOURCES
-    ${EXTENSION_SOURCES}
-    ${CMAKE_CURRENT_SOURCE_DIR}/spatial_types.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/spatial_casts.cpp
-PARENT_SCOPE)

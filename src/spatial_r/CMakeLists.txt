@@ -1,0 +1,9 @@
+set(EXTENSION_SOURCES
+    ${EXTENSION_SOURCES}
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatial_types.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spatial_casts.cpp
+    ${CMAKE_SOURCE_DIR}/../duckdb-spatial/src/spatial/geometry/geometry_processor.cpp
+    ${CMAKE_SOURCE_DIR}/../duckdb-spatial/src/spatial/geometry/geometry_serialization.cpp
+    ${CMAKE_SOURCE_DIR}/../duckdb-spatial/src/spatial/geometry/wkb_writer.cpp
+    ${CMAKE_SOURCE_DIR}/../duckdb-spatial/src/spatial/util/math.cpp
+PARENT_SCOPE)

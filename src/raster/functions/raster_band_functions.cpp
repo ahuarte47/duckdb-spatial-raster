@@ -1,7 +1,7 @@
 #include "raster_band_functions.hpp"
-#include "../raster_types.hpp"
-#include "../core/pixel_type.hpp"
-#include "../core/color_interpretation.hpp"
+#include "raster_types.hpp"
+#include "core/pixel_type.hpp"
+#include "core/color_interpretation.hpp"
 
 // DuckDB
 #include "duckdb/main/database.hpp"

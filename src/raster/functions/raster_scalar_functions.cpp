@@ -1,16 +1,18 @@
 #include "raster_scalar_functions.hpp"
-#include "../raster.hpp"
-#include "../../spatial/spatial_types.hpp"
+#include "raster.hpp"
 
 // DuckDB
 #include "duckdb/main/database.hpp"
 #include "duckdb/main/extension_util.hpp"
 #include "duckdb/common/vector_operations/generic_executor.hpp"
 // Spatial
+#include "spatial_r/spatial_types.hpp"
+#include "spatial/geometry/geometry_serialization.hpp"
+#include "spatial/geometry/sgl.hpp"
 #include "spatial/util/function_builder.hpp"
 // GDAL
 #include "gdal_priv.h"
-#include "../modules/gdal/gdal_context_state.hpp"
+#include "modules/gdal/gdal_context_state.hpp"
 
 namespace duckdb {
 
@@ -41,6 +43,103 @@ struct RT_Srid {
 			func.SetDescription(R"(
 				Returns the spatial reference identifier (EPSG code) of the raster.
                 Refer to [EPSG](https://spatialreference.org/ref/epsg/) for more details.
+			)");
+			func.SetTag("ext", "spatial_raster");
+			func.SetTag("category", "properties");
+		});
+	}
+};
+
+//======================================================================================================================
+// RT_GEOMETRY
+//======================================================================================================================
+
+struct RT_Geometry {
+
+	static void GetGeometry(DataChunk &args, ExpressionState &state, Vector &result) {
+
+		UnaryExecutor::Execute<uintptr_t, string_t>(args.data[0], result, args.size(), [&](uintptr_t input) {
+			Raster raster(reinterpret_cast<GDALDataset *>(input));
+			Boundary2D boundary = raster.GetGeometry();
+
+			// We can create the geometry polygon directly on the stack.
+			double buffer[10];
+			double *buffer_p = buffer;
+			for (const auto &point : boundary.points) {
+				*buffer_p++ = point.x;
+				*buffer_p++ = point.y;
+			}
+
+			sgl::geometry ring(sgl::geometry_type::LINESTRING, false, false);
+			ring.set_vertex_data(reinterpret_cast<const char *>(buffer), 5);
+			sgl::geometry polygon(sgl::geometry_type::POLYGON, false, false);
+			polygon.append_part(&ring);
+
+			// Serialize the geometry into a blob
+			const auto size = Serde::GetRequiredSize(polygon);
+			auto blob = StringVector::EmptyString(result, size);
+			Serde::Serialize(polygon, blob.GetDataWriteable(), size);
+			blob.Finalize();
+			return blob;
+		});
+	}
+
+	static void GetBBox(DataChunk &args, ExpressionState &state, Vector &result) {
+
+		UnaryExecutor::Execute<uintptr_t, string_t>(args.data[0], result, args.size(), [&](uintptr_t input) {
+			Raster raster(reinterpret_cast<GDALDataset *>(input));
+			BBox2D bbox = raster.GetBoundingBox();
+
+			// We can create the geometry polygon directly on the stack.
+			double buffer[10];
+			buffer[0] = bbox.min.x;
+			buffer[1] = bbox.min.y;
+			buffer[2] = bbox.min.x;
+			buffer[3] = bbox.max.y;
+			buffer[4] = bbox.max.x;
+			buffer[5] = bbox.max.y;
+			buffer[6] = bbox.max.x;
+			buffer[7] = bbox.min.y;
+			buffer[8] = bbox.min.x;
+			buffer[9] = bbox.min.y;
+
+			sgl::geometry ring(sgl::geometry_type::LINESTRING, false, false);
+			ring.set_vertex_data(reinterpret_cast<const char *>(buffer), 5);
+			sgl::geometry polygon(sgl::geometry_type::POLYGON, false, false);
+			polygon.append_part(&ring);
+
+			// Serialize the geometry into a blob
+			const auto size = Serde::GetRequiredSize(polygon);
+			auto blob = StringVector::EmptyString(result, size);
+			Serde::Serialize(polygon, blob.GetDataWriteable(), size);
+			blob.Finalize();
+			return blob;
+		});
+	}
+
+	static void Register(DatabaseInstance &db) {
+
+		FunctionBuilder::RegisterScalar(db, "RT_GetGeometry", [](ScalarFunctionBuilder &func) {
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.SetReturnType(GeoTypes::GEOMETRY());
+				variant.SetFunction(GetGeometry);
+			});
+			func.SetDescription(R"(
+				Returns the polygon representation of the extent of the raster.
+			)");
+			func.SetTag("ext", "spatial_raster");
+			func.SetTag("category", "properties");
+		});
+
+		FunctionBuilder::RegisterScalar(db, "RT_GetBBox", [](ScalarFunctionBuilder &func) {
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.SetReturnType(GeoTypes::GEOMETRY());
+				variant.SetFunction(GetBBox);
+			});
+			func.SetDescription(R"(
+				Returns the minimum bounding box of the raster.
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
@@ -649,6 +748,116 @@ struct RT_RasterWarp {
 	}
 };
 
+//======================================================================================================================
+// RT_RasterClip
+//======================================================================================================================
+
+struct RT_RasterClip {
+
+	static void RasterClip_01(DataChunk &args, ExpressionState &state, Vector &result) {
+		auto &context = state.GetContext();
+		auto &ctx_state = GDALClientContextState::GetOrCreate(context);
+
+		using POINTER_TYPE = PrimitiveType<uintptr_t>;
+		using GEOMETRY_TYPE = PrimitiveType<geometry_t>;
+
+		auto &p1 = args.data[0];
+		auto &p2 = args.data[1];
+
+		GenericExecutor::ExecuteBinary<POINTER_TYPE, GEOMETRY_TYPE, POINTER_TYPE>(
+		    p1, p2, result, args.size(), [&](POINTER_TYPE p1, GEOMETRY_TYPE p2) {
+			    auto input = p1.val;
+			    auto geometry = p2.val;
+
+			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+
+			    if (dataset->GetRasterCount() == 0) {
+				    throw InvalidInputException("Input Raster has no RasterBands");
+			    }
+
+			    GDALDataset *result = Raster::Clip(dataset, geometry);
+
+			    if (result == nullptr) {
+				    auto error = Raster::GetLastErrorMsg();
+				    throw IOException("Could not clip raster (" + error + ")");
+			    }
+
+			    ctx_state.GetDatasetRegistry().RegisterDataset(result);
+			    return CastPointerToValue(result);
+		    });
+	}
+
+	static void RasterClip_02(DataChunk &args, ExpressionState &state, Vector &result) {
+		auto &context = state.GetContext();
+		auto &ctx_state = GDALClientContextState::GetOrCreate(context);
+
+		using POINTER_TYPE = PrimitiveType<uintptr_t>;
+		using GEOMETRY_TYPE = PrimitiveType<geometry_t>;
+		using LIST_TYPE = PrimitiveType<list_entry_t>;
+
+		auto &p1 = args.data[0];
+		auto &p2 = args.data[1];
+		auto &p3 = args.data[2];
+		auto &p3_entry = ListVector::GetEntry(p3);
+
+		GenericExecutor::ExecuteTernary<POINTER_TYPE, GEOMETRY_TYPE, LIST_TYPE, POINTER_TYPE>(
+		    p1, p2, p3, result, args.size(), [&](POINTER_TYPE p1, GEOMETRY_TYPE p2, LIST_TYPE p3_offlen) {
+			    auto input = p1.val;
+			    auto geometry = p2.val;
+			    auto offlen = p3_offlen.val;
+
+			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+
+			    if (dataset->GetRasterCount() == 0) {
+				    throw InvalidInputException("Input Raster has no RasterBands");
+			    }
+
+			    auto options = std::vector<std::string>();
+
+			    for (idx_t i = offlen.offset; i < offlen.offset + offlen.length; i++) {
+				    const auto &child_value = p3_entry.GetValue(i);
+				    const auto option = child_value.ToString();
+				    options.emplace_back(option);
+			    }
+
+			    GDALDataset *result = Raster::Clip(dataset, geometry, options);
+
+			    if (result == nullptr) {
+				    auto error = Raster::GetLastErrorMsg();
+				    throw IOException("Could not clip raster (" + error + ")");
+			    }
+
+			    ctx_state.GetDatasetRegistry().RegisterDataset(result);
+			    return CastPointerToValue(result);
+		    });
+	}
+
+	static void Register(DatabaseInstance &db) {
+
+		FunctionBuilder::RegisterScalar(db, "RT_RasterClip", [](ScalarFunctionBuilder &func) {
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.AddParameter("geometry", GeoTypes::GEOMETRY());
+				variant.SetReturnType(RasterTypes::RASTER());
+				variant.SetFunction(RasterClip_01);
+			});
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.AddParameter("geometry", GeoTypes::GEOMETRY());
+				variant.AddParameter("options", LogicalType::LIST(LogicalType::VARCHAR));
+				variant.SetReturnType(RasterTypes::RASTER());
+				variant.SetFunction(RasterClip_02);
+			});
+			func.SetDescription(R"(
+				Returns a raster that is clipped by the input geometry.
+				`options` is optional, an array of parameters like [GDALWarp](https://gdal.org/programs/gdalwarp.html).
+			)");
+			func.SetTag("ext", "spatial_raster");
+			func.SetTag("category", "properties");
+		});
+	}
+};
+
 } // namespace
 
 // ######################################################################################################################
@@ -657,11 +866,13 @@ struct RT_RasterWarp {
 
 void RasterScalarFunctions::Register(DatabaseInstance &db) {
 	RT_Srid::Register(db);
+	RT_Geometry::Register(db);
 	RT_Properties::Register(db);
 	RT_RasterToWorldCoord::Register(db);
 	RT_WorldToRasterCoord::Register(db);
 	RT_Value::Register(db);
 	RT_RasterWarp::Register(db);
+	RT_RasterClip::Register(db);
 }
 
 } // namespace duckdb

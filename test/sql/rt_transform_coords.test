@@ -12,4 +12,4 @@ FROM
 	RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
 ;
 ----
-POINT (541020 4796640)	541020.0	4796640.0	COORD (1, 2)	1	2
+POINT (541020 4.79664E+06)	541020.0	4.79664E+06	COORD (1, 2)	1	2

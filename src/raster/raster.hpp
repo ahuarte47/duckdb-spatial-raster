@@ -2,7 +2,8 @@
 
 #include <string>
 #include "raster_types.hpp"
-#include "../spatial/spatial_types.hpp"
+#include "spatial_r/spatial_types.hpp"
+#include "spatial/geometry/geometry_type.hpp"
 
 class GDALDataset;
 
@@ -36,6 +37,12 @@ public:
 	//! Returns the spatial reference identifier of the raster
 	int32_t GetSrid() const;
 
+	//! Returns the minimal-bounding-box containing the extent of the raster
+	BBox2D GetBoundingBox() const;
+
+	//! Returns the polygon representation of the extent of the raster
+	Boundary2D GetGeometry() const;
+
 	//! Gets the geometric transform matrix (double[6]) of the raster
 	bool GetGeoTransform(double *matrix) const;
 
@@ -51,8 +58,16 @@ public:
 	//! Returns the value of a given band in a given col and row pixel
 	bool GetValue(double &value, int32_t band_num, int32_t col, int32_t row) const;
 
+	//! Builds a VRT from a list of Rasters
+	static GDALDataset *BuildVRT(const std::vector<GDALDataset *> &datasets,
+	                             const std::vector<std::string> &options = std::vector<std::string>());
+
 	//! Performs mosaicing, reprojection and/or warping on a raster
 	static GDALDataset *Warp(GDALDataset *dataset,
+	                         const std::vector<std::string> &options = std::vector<std::string>());
+
+	//! Returns a raster that is clipped by the input geometry
+	static GDALDataset *Clip(GDALDataset *dataset, const geometry_t &geometry,
 	                         const std::vector<std::string> &options = std::vector<std::string>());
 
 public:

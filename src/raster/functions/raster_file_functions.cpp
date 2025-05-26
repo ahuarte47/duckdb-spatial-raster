@@ -1,5 +1,5 @@
 #include "raster_file_functions.hpp"
-#include "../raster.hpp"
+#include "raster.hpp"
 
 // DuckDB
 #include "duckdb/main/database.hpp"
@@ -9,8 +9,8 @@
 #include "spatial/util/function_builder.hpp"
 // GDAL
 #include "gdal_priv.h"
-#include "../modules/gdal/gdal_dataset_factory.hpp"
-#include "../modules/gdal/gdal_context_state.hpp"
+#include "modules/gdal/gdal_dataset_factory.hpp"
+#include "modules/gdal/gdal_context_state.hpp"
 
 namespace duckdb {
 
