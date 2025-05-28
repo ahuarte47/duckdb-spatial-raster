@@ -16,6 +16,8 @@ add_definitions(-DDUCKDB_PATCH_VERSION=${DUCKDB_PATCH_VERSION})
 
 # Enable network functionality (OpenSSL and GDAL's CURL based fs/drivers)
 option(SPATIAL_USE_NETWORK "Enable network functionality" ON)
+# Enable GEOS support
+option(SPATIAL_USE_GEOS "Enable GEOS support" ON)
 
 if(EMSCRIPTEN
    OR IOS
@@ -47,6 +49,7 @@ if(NOT EXISTS ${CMAKE_BINARY_DIR}/deps)
       -DWASM_LOADABLE_EXTENSIONS=1 -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
       -DOSX_BUILD_ARCH=${OSX_BUILD_ARCH}
       -DSPATIAL_USE_NETWORK=${SPATIAL_USE_NETWORK}
+      -DSPATIAL_USE_GEOS=${SPATIAL_USE_GEOS}
       -DOPENSSL_ROOT_DIR=$ENV{OPENSSL_ROOT_DIR}
       -DVCPKG_MANIFEST_DIR='${VCPKG_MANIFEST_DIR}'
       -DVCPKG_INSTALLED_DIR='${CMAKE_BINARY_DIR}/vcpkg_installed'
@@ -88,19 +91,24 @@ find_library(SQLITE3_MEMVFS memvfs)
 find_package(ZLIB REQUIRED)
 find_package(PROJ REQUIRED)
 find_package(SQLite3 REQUIRED)
-find_package(GEOS REQUIRED)
 find_package(GDAL REQUIRED)
 find_package(EXPAT REQUIRED)
 
 # Important: The link order matters, its the reverse order of dependency
 set(EXTENSION_DEPENDENCIES
     GDAL::GDAL
-    GEOS::geos_c
     PROJ::proj
     EXPAT::EXPAT
     SQLite::SQLite3
     ZLIB::ZLIB
     ${SQLITE3_MEMVFS})
+
+if(SPATIAL_USE_GEOS)
+  message(STATUS "Building with GEOS functionality")
+  find_package(GEOS REQUIRED)
+  set(EXTENSION_DEPENDENCIES ${EXTENSION_DEPENDENCIES} GEOS::geos_c)
+  add_definitions(-DSPATIAL_USE_GEOS=1)
+endif()
 
 if(SPATIAL_USE_NETWORK)
   message(STATUS "Building with network functionality")
