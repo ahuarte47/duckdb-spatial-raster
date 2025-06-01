@@ -33,6 +33,7 @@ struct RT_RasterUnion_Agg {
 			auto &options = bind_data.options;
 
 			std::vector<std::string> vrt_options;
+			vrt_options.push_back("-separate");
 			vrt_options.insert(vrt_options.end(), options.begin(), options.end());
 
 			GDALDataset *result = Raster::BuildVRT(*datasets, vrt_options);
@@ -90,6 +91,80 @@ struct RT_RasterUnion_Agg {
 	}
 };
 
+//======================================================================================================================
+// RT_RasterMosaic_Agg
+//======================================================================================================================
+
+struct RT_RasterMosaic_Agg {
+
+	template <class T, class STATE>
+	static void RasterMosaicFunction(STATE &state, T &target, AggregateFinalizeData &finalize_data) {
+		if (!state.is_set) {
+			finalize_data.ReturnNull();
+		} else {
+			auto datasets = state.datasets;
+			auto &bind_data = finalize_data.input.bind_data->Cast<RasterAggBindData>();
+			auto &context = bind_data.context;
+			auto &options = bind_data.options;
+
+			std::vector<std::string> vrt_options;
+			vrt_options.insert(vrt_options.end(), options.begin(), options.end());
+
+			GDALDataset *result = Raster::BuildVRT(*datasets, vrt_options);
+			state.Destroy();
+
+			if (result == nullptr) {
+				auto error = Raster::GetLastErrorMsg();
+				throw IOException("Could not make mosaic: (" + error + ")");
+			}
+
+			auto &ctx_state = GDALClientContextState::GetOrCreate(context);
+			ctx_state.GetDatasetRegistry().RegisterDataset(result);
+			target = CastPointerToValue(result);
+		}
+	}
+
+	struct MosaicAggUnaryOperation : RasterAggUnaryOperation {
+
+		template <class T, class STATE>
+		static void Finalize(STATE &state, T &target, AggregateFinalizeData &finalize_data) {
+			RasterMosaicFunction(state, target, finalize_data);
+		}
+	};
+
+	struct MosaicAggBinaryOperation : RasterAggBinaryOperation {
+
+		template <class T, class STATE>
+		static void Finalize(STATE &state, T &target, AggregateFinalizeData &finalize_data) {
+			RasterMosaicFunction(state, target, finalize_data);
+		}
+	};
+
+	static void Register(DatabaseInstance &db) {
+
+		auto fun01 = AggregateFunction::UnaryAggregate<RasterAggState, uintptr_t, uintptr_t, MosaicAggUnaryOperation>(
+		    RasterTypes::RASTER(), RasterTypes::RASTER());
+		fun01.bind = RasterAggBindData::BindRasterAggOperation;
+
+		auto fun02 = AggregateFunction::BinaryAggregate<RasterAggState, uintptr_t, list_entry_t, uintptr_t,
+		                                                MosaicAggBinaryOperation>(
+		    RasterTypes::RASTER(), LogicalType::LIST(LogicalType::VARCHAR), RasterTypes::RASTER());
+		fun02.bind = RasterAggBindData::BindRasterAggOperation;
+
+		FunctionBuilder::RegisterAggregate(db, "RT_RasterMosaic_Agg", [&](AggregateFunctionBuilder &func) {
+			func.SetFunction(fun01);
+			func.SetFunction(fun02);
+			func.SetDescription(R"(
+				Returns a mosaic of a set of raster tiles into a single raster.
+				Tiles are considered as source rasters of a larger mosaic and the result dataset has as many bands as one of the input files.
+				`options` is optional, an array of parameters like [GDALBuildVRT](https://gdal.org/programs/gdalbuildvrt.html).
+		    )");
+			func.SetTag("ext", "spatial_raster");
+			func.SetTag("category", "construction");
+		});
+	}
+};
+
 } // namespace
 
 // ######################################################################################################################
@@ -98,6 +173,7 @@ struct RT_RasterUnion_Agg {
 
 void RasterAggregateFunctions::Register(DatabaseInstance &db) {
 	RT_RasterUnion_Agg::Register(db);
+	RT_RasterMosaic_Agg::Register(db);
 }
 
 } // namespace duckdb
