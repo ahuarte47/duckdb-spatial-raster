@@ -95,13 +95,8 @@ find_package(GDAL REQUIRED)
 find_package(EXPAT REQUIRED)
 
 # Important: The link order matters, its the reverse order of dependency
-set(EXTENSION_DEPENDENCIES
-    GDAL::GDAL
-    PROJ::proj
-    EXPAT::EXPAT
-    SQLite::SQLite3
-    ZLIB::ZLIB
-    ${SQLITE3_MEMVFS})
+set(EXTENSION_DEPENDENCIES GDAL::GDAL PROJ::proj EXPAT::EXPAT SQLite::SQLite3
+                           ZLIB::ZLIB ${SQLITE3_MEMVFS})
 
 if(SPATIAL_USE_GEOS)
   message(STATUS "Building with GEOS functionality")

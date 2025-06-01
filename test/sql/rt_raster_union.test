@@ -1,0 +1,19 @@
+require spatial_raster
+
+query I
+WITH __input AS (
+	SELECT
+		1 AS raster_id,
+		RT_RasterFromFile(file) AS raster
+	FROM
+		glob('./test/data/mosaic/*.tiff')
+)
+SELECT
+	RT_GetGeometry(RT_RasterUnion_Agg(raster, options => ['-separate', '-resolution', 'highest'])) AS g
+FROM
+	__input
+GROUP BY
+	raster_id
+;
+----
+POLYGON ((541020 4640780, 541020 4796640, 685600 4796640, 685600 4640780, 541020 4640780))

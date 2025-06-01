@@ -13,6 +13,7 @@
 #include "raster_types.hpp"
 #include "raster_casts.hpp"
 #include "raster_table_functions.hpp"
+#include "functions/raster_aggregate_functions.hpp"
 #include "functions/raster_band_functions.hpp"
 #include "functions/raster_scalar_functions.hpp"
 #include "functions/raster_file_functions.hpp"
@@ -40,6 +41,7 @@ static void LoadInternal(DatabaseInstance &instance) {
 	RasterBandFunctions::Register(instance);
 	RasterScalarFunctions::Register(instance);
 	RasterFileFunctions::Register(instance);
+	RasterAggregateFunctions::Register(instance);
 
 	// Register the spatial types
 	GeoTypes::Register(instance);

@@ -93,6 +93,14 @@ struct RasterCasts {
 		// RASTER -> GEOMETRY
 		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER(), GeoTypes::GEOMETRY(), RasterToGeometryCast, 1);
 
+		// RASTER -> POINTER is implicitly castable
+		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER(), LogicalType::POINTER,
+		                                    DefaultCasts::ReinterpretCast, 1);
+
+		// POINTER -> RASTER is implicitly castable
+		ExtensionUtil::RegisterCastFunction(db, LogicalType::POINTER, RasterTypes::RASTER(),
+		                                    DefaultCasts::ReinterpretCast, 1);
+
 		// RASTER_COORD -> VARCHAR
 		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER_COORD(), LogicalType::VARCHAR, CoordToVarcharCast,
 		                                    1);
