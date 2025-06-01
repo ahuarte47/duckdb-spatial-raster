@@ -1,0 +1,46 @@
+require spatial_raster
+
+statement ok
+INSTALL spatial;
+
+statement ok
+LOAD spatial;
+
+query I
+WITH __input AS (
+	SELECT
+		1 AS mosaic_id,
+		RT_RasterFromFile(file) AS raster
+	FROM
+		glob('./test/data/mosaic/*.tiff')
+),
+__mosaic AS (
+	SELECT
+		RT_RasterMosaic_Agg(raster, options => ['-r', 'bilinear']) AS mosaic
+	FROM
+		__input
+	GROUP BY
+		mosaic_id
+),
+__geometry AS (
+	SELECT geom FROM ST_Read('./test/data/CATAST_Pol_Township-PNA.gpkg')
+),
+__clip AS (
+	SELECT
+		RT_RasterClip(mosaic,
+					 (SELECT geom FROM __geometry LIMIT 1),
+					  options =>
+						[
+							'-r', 'bilinear', '-crop_to_cutline', '-wo', 'CUTLINE_ALL_TOUCHED=TRUE'
+						]
+		) AS clip
+	FROM
+		__mosaic
+)
+SELECT
+	ST_Area(RT_GetGeometry(clip)) AS result
+FROM
+	__clip
+;
+----
+44269454.49488351

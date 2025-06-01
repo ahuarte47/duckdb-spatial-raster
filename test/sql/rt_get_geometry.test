@@ -6,6 +6,6 @@ SELECT RT_GetGeometry(raster) FROM RT_Read('./test/data/mosaic/SCL.tif-land-clip
 POLYGON ((541020 4690200, 541020 4796640, 609780 4796640, 609780 4690200, 541020 4690200))
 
 query I
-SELECT raster::geometry FROM RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff');
+SELECT raster::rgeometry FROM RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff');
 ----
 POLYGON ((541020 4690200, 541020 4796640, 609780 4796640, 609780 4690200, 541020 4690200))

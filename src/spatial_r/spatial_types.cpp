@@ -24,13 +24,13 @@ LogicalType GeoTypes::WKB_BLOB() {
 void GeoTypes::Register(DatabaseInstance &db) {
 
 	// POINT_2D
-	ExtensionUtil::RegisterType(db, "POINT_2D", GeoTypes::POINT_2D());
+	ExtensionUtil::RegisterType(db, "RPOINT_2D", GeoTypes::POINT_2D());
 
 	// GEOMETRY
-	ExtensionUtil::RegisterType(db, "GEOMETRY", GeoTypes::GEOMETRY());
+	ExtensionUtil::RegisterType(db, "RGEOMETRY", GeoTypes::GEOMETRY());
 
 	// WKB_BLOB
-	ExtensionUtil::RegisterType(db, "WKB_BLOB", GeoTypes::WKB_BLOB());
+	ExtensionUtil::RegisterType(db, "RWKB_BLOB", GeoTypes::WKB_BLOB());
 }
 
 } // namespace duckdb
