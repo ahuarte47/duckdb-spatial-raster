@@ -7,19 +7,13 @@ WITH __input AS (
 		RT_RasterFromFile(file) AS raster
 	FROM
 		glob('./test/data/mosaic/*.tiff')
-),
-__mosaic AS (
-	SELECT
-		RT_RasterMosaic_Agg(raster, options => ['-r', 'bilinear']) AS mosaic
-	FROM
-		__input
-	GROUP BY
-		mosaic_id
 )
 SELECT
-	RT_GetGeometry(mosaic) AS result
+	RT_GetGeometry(RT_RasterMosaic_Agg(raster, options => ['-r', 'bilinear'])) AS g
 FROM
-	__mosaic
+	__input
+GROUP BY
+	mosaic_id
 ;
 ----
 POLYGON ((541020 4640780, 541020 4796640, 685600 4796640, 685600 4640780, 541020 4640780))

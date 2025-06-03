@@ -85,8 +85,30 @@ struct RT_RasterUnion_Agg {
 		        Each tiles goes into a separate band in the result dataset.
 		        `options` is optional, an array of parameters like [GDALBuildVRT](https://gdal.org/programs/gdalbuildvrt.html).
 		    )");
+			func.SetExample(R"(
+				WITH __input AS (
+					SELECT
+						1 AS raster_id,
+						RT_RasterFromFile(file) AS raster
+					FROM
+						glob('./test/data/mosaic/*.tiff')
+				)
+				SELECT
+					RT_GetGeometry(RT_RasterUnion_Agg(raster, options => ['-resolution', 'highest'])) AS g
+				FROM
+					__input
+				GROUP BY
+					raster_id
+				;
+				┌────────────────────────────────────────────────────────────────────────────────────────────┐
+				│                                             g                                              │
+				│                                          geometry                                          │
+				├────────────────────────────────────────────────────────────────────────────────────────────┤
+				│ POLYGON ((541020 4640780, 541020 4796640, 685600 4796640, 685600 4640780, 541020 4640780)) │
+				└────────────────────────────────────────────────────────────────────────────────────────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "construction");
+			func.SetTag("category", "aggregates");
 		});
 	}
 };
@@ -159,8 +181,30 @@ struct RT_RasterMosaic_Agg {
 				Tiles are considered as source rasters of a larger mosaic and the result dataset has as many bands as one of the input files.
 				`options` is optional, an array of parameters like [GDALBuildVRT](https://gdal.org/programs/gdalbuildvrt.html).
 		    )");
+			func.SetExample(R"(
+				WITH __input AS (
+					SELECT
+						1 AS mosaic_id,
+						RT_RasterFromFile(file) AS raster
+					FROM
+						glob('./test/data/mosaic/*.tiff')
+				)
+				SELECT
+					RT_GetGeometry(RT_RasterMosaic_Agg(raster, options => ['-r', 'bilinear'])) AS g
+				FROM
+					__input
+				GROUP BY
+					mosaic_id
+				;
+				┌────────────────────────────────────────────────────────────────────────────────────────────┐
+				│                                             g                                              │
+				│                                          geometry                                          │
+				├────────────────────────────────────────────────────────────────────────────────────────────┤
+				│ POLYGON ((541020 4640780, 541020 4796640, 685600 4796640, 685600 4640780, 541020 4640780)) │
+				└────────────────────────────────────────────────────────────────────────────────────────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "construction");
+			func.SetTag("category", "aggregates");
 		});
 	}
 };

@@ -135,6 +135,19 @@ struct RT_RasterBand {
 				Returns true if there is no band with given band number.
 				Band numbers start at 1 and band is assumed to be 1 if not specified.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_HasNoBand(raster, 1)
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌─────────────────────────┐
+				│ rt_hasnoband(raster, 1) │
+				│         boolean         │
+				├─────────────────────────┤
+				│ true                    │
+				└─────────────────────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -148,6 +161,19 @@ struct RT_RasterBand {
 			});
 			func.SetDescription(R"(
 				Returns the NODATA value of a band in the raster.
+			)");
+			func.SetExample(R"(
+				SELECT
+					RT_GetBandNoDataValue(raster, 1)
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌──────────────────────────────────┐
+				│ rt_getbandnodatavalue(raster, 1) │
+				│              double              │
+				├──────────────────────────────────┤
+				│             -9999.0              │
+				└──────────────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
@@ -180,6 +206,19 @@ struct RT_RasterBand {
 				+ CFloat32 = 10: Complex Float32
 				+ CFloat64 = 11: Complex Float64
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_GetBandPixelType(raster, 1)
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌────────────────────────────────┐
+				│ rt_getbandpixeltype(raster, 1) │
+				│             int32              │
+				├────────────────────────────────┤
+				│               3                │
+				└────────────────────────────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -210,6 +249,19 @@ struct RT_RasterBand {
 				+ CInt32: Complex Int32
 				+ CFloat32: Complex Float32
 				+ CFloat64: Complex Float64
+			)");
+			func.SetExample(R"(
+				SELECT
+					RT_GetBandPixelTypeName(raster, 1)
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌────────────────────────────────────┐
+				│ rt_getbandpixeltypename(raster, 1) │
+				│              varchar               │
+				├────────────────────────────────────┤
+				│ Int16                              │
+				└────────────────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
@@ -244,6 +296,19 @@ struct RT_RasterBand {
 				+ YCbCr_CbBand = 15: Cb Chroma
 				+ YCbCr_CrBand = 16: Cr Chroma
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_GetBandColorInterpretation(raster, 1)
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌──────────────────────────────────────────┐
+				│ rt_getbandcolorinterpretation(raster, 1) │
+				│                  int32                   │
+				├──────────────────────────────────────────┤
+				│                    1                     │
+				└──────────────────────────────────────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -276,6 +341,19 @@ struct RT_RasterBand {
 				+ YLuminance: Y Luminance
 				+ CbChroma: Cb Chroma
 				+ CrChroma: Cr Chroma
+			)");
+			func.SetExample(R"(
+				SELECT
+					RT_GetBandColorInterpretationName(raster, 1)
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌──────────────────────────────────────────────┐
+				│ rt_getbandcolorinterpretationname(raster, 1) │
+				│                   varchar                    │
+				├──────────────────────────────────────────────┤
+				│ Greyscale                                    │
+				└──────────────────────────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");

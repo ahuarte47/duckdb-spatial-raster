@@ -15,6 +15,8 @@ class Raster {
 public:
 	//! Constructor
 	Raster(GDALDataset *dataset);
+	//! Destructor
+	~Raster();
 
 	//! Returns the pointer to the dataset managed
 	GDALDataset *operator->() const noexcept {
@@ -63,16 +65,14 @@ public:
 	                             const std::vector<std::string> &options = std::vector<std::string>());
 
 	//! Performs mosaicing, reprojection and/or warping on a raster
-	static GDALDataset *Warp(GDALDataset *dataset,
-	                         const std::vector<std::string> &options = std::vector<std::string>());
+	GDALDataset *Warp(const std::vector<std::string> &options = std::vector<std::string>());
 
 	//! Returns a raster that is clipped by the input geometry
-	static GDALDataset *Clip(GDALDataset *dataset, const geometry_t &geometry,
-	                         const std::vector<std::string> &options = std::vector<std::string>());
+	GDALDataset *Clip(const geometry_t &geometry, const std::vector<std::string> &options = std::vector<std::string>());
 
 	//! Splits a raster into tiles of the given size, with optional overlap
-	static std::vector<GDALDataset *> Split(GDALDataset *dataset, int32_t tile_size_x, int32_t tile_size_y,
-	                                        int32_t overlap_x = 0, int32_t overlap_y = 0);
+	std::vector<GDALDataset *> Split(int32_t tile_size_x, int32_t tile_size_y, int32_t overlap_x = 0,
+	                                 int32_t overlap_y = 0);
 
 public:
 	//! Returns the geometric X and Y (longitude and latitude) given a column and row

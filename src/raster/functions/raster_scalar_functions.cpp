@@ -44,6 +44,19 @@ struct RT_Srid {
 				Returns the spatial reference identifier (EPSG code) of the raster.
                 Refer to [EPSG](https://spatialreference.org/ref/epsg/) for more details.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_Srid(raster) AS srid
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌───────┐
+				│ srid  │
+				│ int32 │
+				├───────┤
+				│ 32630 │
+				└───────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -128,6 +141,19 @@ struct RT_Geometry {
 			func.SetDescription(R"(
 				Returns the polygon representation of the extent of the raster.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_GetGeometry(raster) AS g
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌────────────────────────────────────────────────────────────────────────────────────────────┐
+				│                                             g                                              │
+				│                                          geometry                                          │
+				├────────────────────────────────────────────────────────────────────────────────────────────┤
+				│ POLYGON ((541020 4690200, 541020 4796640, 609780 4796640, 609780 4690200, 541020 4690200)) │
+				└────────────────────────────────────────────────────────────────────────────────────────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -140,6 +166,19 @@ struct RT_Geometry {
 			});
 			func.SetDescription(R"(
 				Returns the minimum bounding box of the raster.
+			)");
+			func.SetExample(R"(
+				SELECT
+					RT_GetBBox(raster) AS bbox
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌────────────────────────────────────────────────────────────────────────────────────────────┐
+				│                                            bbox                                            │
+				│                                          geometry                                          │
+				├────────────────────────────────────────────────────────────────────────────────────────────┤
+				│ POLYGON ((541020 4690200, 541020 4796640, 609780 4796640, 609780 4690200, 541020 4690200)) │
+				└────────────────────────────────────────────────────────────────────────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
@@ -236,6 +275,19 @@ struct RT_Properties {
 			func.SetDescription(R"(
 				Returns the width of the raster in pixels.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_Width(raster) AS cols
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌───────┐
+				│ cols  │
+				│ int32 │
+				├───────┤
+				│ 3438  │
+				└───────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -248,6 +300,19 @@ struct RT_Properties {
 			});
 			func.SetDescription(R"(
 				Returns the height of the raster in pixels.
+			)");
+			func.SetExample(R"(
+				SELECT
+					RT_Height(raster) AS rows
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌───────┐
+				│ rows  │
+				│ int32 │
+				├───────┤
+				│ 5322  │
+				└───────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
@@ -262,6 +327,19 @@ struct RT_Properties {
 			func.SetDescription(R"(
 				Returns the number of bands in the raster.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_NumBands(raster) AS num_bands
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌───────────┐
+				│ num_bands │
+				│   int32   │
+				├───────────┤
+				│     1     │
+				└───────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -275,6 +353,19 @@ struct RT_Properties {
 			func.SetDescription(R"(
 				Returns the upper left X coordinate of raster in projected spatial reference.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_UpperLeftX(raster) AS ulx
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌──────────┐
+				│   ulx    │
+				│  double  │
+				├──────────┤
+				│ 541020.0 │
+				└──────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -287,6 +378,20 @@ struct RT_Properties {
 			});
 			func.SetDescription(R"(
 				Returns the upper left Y coordinate of raster in projected spatial reference.
+			)");
+			func.SetExample(R"(
+				SELECT
+					RT_UpperLeftY(raster) AS uly
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌────────────────┐
+				│      uly       │
+				│     double     │
+				├────────────────┤
+				│   4796640.0    │
+				│ (4.80 million) │
+				└────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
@@ -302,6 +407,19 @@ struct RT_Properties {
 				Returns the X component of the pixel width in units of coordinate reference system.
 				Refer to [World File](https://en.wikipedia.org/wiki/World_file) for more details.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_ScaleX(raster) AS scale_x
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌─────────┐
+				│ scale_x │
+				│ double  │
+				├─────────┤
+				│  20.0   │
+				└─────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -315,6 +433,19 @@ struct RT_Properties {
 			func.SetDescription(R"(
 				Returns the Y component of the pixel width in units of coordinate reference system.
 				Refer to [World File](https://en.wikipedia.org/wiki/World_file) for more details.
+			)");
+			func.SetExample(R"(
+				SELECT
+					RT_ScaleY(raster) AS scale_y
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌─────────┐
+				│ scale_y │
+				│ double  │
+				├─────────┤
+				│  -20.0  │
+				└─────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
@@ -330,6 +461,19 @@ struct RT_Properties {
 				Returns the georeference X skew (or rotation parameter).
 				Refer to [World File](https://en.wikipedia.org/wiki/World_file) for more details.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_SkewX(raster) AS skew_x
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌────────┐
+				│ skew_x │
+				│ double │
+				├────────┤
+				│  0.0   │
+				└────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -343,6 +487,19 @@ struct RT_Properties {
 			func.SetDescription(R"(
 				Returns the georeference Y skew (or rotation parameter).
 				Refer to [World File](https://en.wikipedia.org/wiki/World_file) for more details.
+			)");
+			func.SetExample(R"(
+				SELECT
+					RT_SkewY(raster) AS skew_y
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌────────┐
+				│ skew_y │
+				│ double │
+				├────────┤
+				│  0.0   │
+				└────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
@@ -358,6 +515,19 @@ struct RT_Properties {
 				Returns the width of a pixel in geometric units of the spatial reference system.
 				In the common case where there is no skew, the pixel width is just the scale ratio between geometric coordinates and raster pixels.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_PixelWidth(raster) AS px_width
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌──────────┐
+				│ px_width │
+				│  double  │
+				├──────────┤
+				│   20.0   │
+				└──────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -371,6 +541,19 @@ struct RT_Properties {
 			func.SetDescription(R"(
 				Returns the height of a pixel in geometric units of the spatial reference system.
 				In the common case where there is no skew, the pixel height is just the scale ratio between geometric coordinates and raster pixels.
+			)");
+			func.SetExample(R"(
+				SELECT
+					RT_PixelHeight(raster) AS px_height
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌───────────┐
+				│ px_height │
+				│  double   │
+				├───────────┤
+				│   20.0    │
+				└───────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
@@ -456,6 +639,19 @@ struct RT_RasterToWorldCoord {
 				Returns the upper left corner as geometric X and Y (longitude and latitude) given a column and row.
 				Returned X and Y are in geometric units of the georeferenced raster.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_RasterToWorldCoord(raster, 0, 0) AS coord
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌────────────────────────┐
+				│         coord          │
+				│        point_2d        │
+				├────────────────────────┤
+				│ POINT (541020 4796640) │
+				└────────────────────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -472,6 +668,19 @@ struct RT_RasterToWorldCoord {
 				Returns the upper left X coordinate of a raster column row in geometric units of the georeferenced raster.
 				Returned X is in geometric units of the georeferenced raster.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_RasterToWorldCoordX(raster, 0, 0) AS coord_x
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌──────────┐
+				│ coord_x  │
+				│  double  │
+				├──────────┤
+				│ 541020.0 │
+				└──────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -487,6 +696,20 @@ struct RT_RasterToWorldCoord {
 			func.SetDescription(R"(
 				Returns the upper left Y coordinate of a raster column row in geometric units of the georeferenced raster.
 				Returned Y is in geometric units of the georeferenced raster.
+			)");
+			func.SetExample(R"(
+				SELECT
+					RT_RasterToWorldCoordY(raster, 0, 0) AS coord_y
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌────────────────┐
+				│    coord_y     │
+				│     double     │
+				├────────────────┤
+				│   4796640.0    │
+				│ (4.80 million) │
+				└────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
@@ -572,6 +795,19 @@ struct RT_WorldToRasterCoord {
 				Returns the upper left corner as column and row given geometric X and Y (longitude and latitude).
 				Geometric X and Y must be expressed in the spatial reference coordinate system of the raster.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_WorldToRasterCoord(raster, RT_RasterToWorldCoordX(raster, 1, 2), RT_RasterToWorldCoordY(raster, 1, 2)) AS coord
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌──────────────┐
+				│    coord     │
+				│ raster_coord │
+				├──────────────┤
+				│ COORD (1, 2) │
+				└──────────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -588,6 +824,19 @@ struct RT_WorldToRasterCoord {
 				Returns the column in the raster given geometric X and Y (longitude and latitude).
 				Geometric X and Y must be expressed in the spatial reference coordinate system of the raster.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_WorldToRasterCoordX(raster, RT_RasterToWorldCoordX(raster, 1, 2), RT_RasterToWorldCoordY(raster, 1, 2)) AS col
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌───────┐
+				│  col  │
+				│ int32 │
+				├───────┤
+				│   1   │
+				└───────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -603,6 +852,19 @@ struct RT_WorldToRasterCoord {
 			func.SetDescription(R"(
 				Returns the row in the raster given geometric X and Y (longitude and latitude).
 				Geometric X and Y must be expressed in the spatial reference coordinate system of the raster.
+			)");
+			func.SetExample(R"(
+				SELECT
+					RT_WorldToRasterCoordY(raster, RT_RasterToWorldCoordX(raster, 1, 2), RT_RasterToWorldCoordY(raster, 1, 2)) AS row
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌───────┐
+				│  row  │
+				│ int32 │
+				├───────┤
+				│   2   │
+				└───────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
@@ -675,6 +937,23 @@ struct RT_Value {
 				Returns the value of a given band in a given column, row pixel.
 				Band numbers start at 1 and band is assumed to be 1 if not specified.
 			)");
+			func.SetExample(R"(
+				SELECT
+					RT_Value(raster, 1, (RT_Width(raster) / 2)::INT, (RT_Height(raster) / 2)::INT) AS valCC,
+					RT_Value(raster, 1, 0, 0) AS val00,
+					RT_Value(raster, 1, RT_Width(raster) - 1, 0) AS val10,
+					RT_Value(raster, 1, RT_Width(raster) - 1, RT_Height(raster) - 1) AS val11,
+					RT_Value(raster, 1, 0, RT_Height(raster) - 1) AS val01
+				FROM
+					RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				;
+				┌────────┬─────────┬─────────┬────────┬─────────┐
+				│ valCC  │  val00  │  val10  │ val11  │  val01  │
+				│ double │ double  │ double  │ double │ double  │
+				├────────┼─────────┼─────────┼────────┼─────────┤
+				│  1.0   │ -9999.0 │ -9999.0 │  15.0  │ -9999.0 │
+				└────────┴─────────┴─────────┴────────┴─────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -703,9 +982,9 @@ struct RT_RasterWarp {
 			    auto input = p1.val;
 			    auto offlen = p2_offlen.val;
 
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    Raster raster(reinterpret_cast<GDALDataset *>(input));
 
-			    if (dataset->GetRasterCount() == 0) {
+			    if (raster.GetRasterCount() == 0) {
 				    throw InvalidInputException("Input Raster has no RasterBands");
 			    }
 
@@ -717,7 +996,7 @@ struct RT_RasterWarp {
 				    options.emplace_back(option);
 			    }
 
-			    GDALDataset *result = Raster::Warp(dataset, options);
+			    GDALDataset *result = raster.Warp(options);
 
 			    if (result == nullptr) {
 				    auto error = Raster::GetLastErrorMsg();
@@ -741,6 +1020,32 @@ struct RT_RasterWarp {
 			func.SetDescription(R"(
 				Performs mosaicing, reprojection and/or warping on a raster.
 				`options` is optional, an array of parameters like [GDALWarp](https://gdal.org/programs/gdalwarp.html).
+			)");
+			func.SetExample(R"(
+				WITH __input AS (
+					SELECT
+						raster
+					FROM
+						RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				),
+				__warp AS (
+					SELECT
+						RT_RasterWarp(raster, options => ['-r', 'bilinear', '-tr', '40.0', '40.0']) AS warp
+					FROM
+						__input
+				)
+				SELECT
+					RT_ScaleX(warp) AS scale_x,
+					RT_ScaleY(warp) AS scale_y
+				FROM
+					__warp
+				;
+				┌─────────┬─────────┐
+				│ scale_x │ scale_y │
+				│ double  │ double  │
+				├─────────┼─────────┤
+				│  40.0   │  -40.0  │
+				└─────────┴─────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
@@ -769,13 +1074,13 @@ struct RT_RasterClip {
 			    auto input = p1.val;
 			    auto geometry = p2.val;
 
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    Raster raster(reinterpret_cast<GDALDataset *>(input));
 
-			    if (dataset->GetRasterCount() == 0) {
+			    if (raster.GetRasterCount() == 0) {
 				    throw InvalidInputException("Input Raster has no RasterBands");
 			    }
 
-			    GDALDataset *result = Raster::Clip(dataset, geometry);
+			    GDALDataset *result = raster.Clip(geometry);
 
 			    if (result == nullptr) {
 				    auto error = Raster::GetLastErrorMsg();
@@ -806,9 +1111,9 @@ struct RT_RasterClip {
 			    auto geometry = p2.val;
 			    auto offlen = p3_offlen.val;
 
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    Raster raster(reinterpret_cast<GDALDataset *>(input));
 
-			    if (dataset->GetRasterCount() == 0) {
+			    if (raster.GetRasterCount() == 0) {
 				    throw InvalidInputException("Input Raster has no RasterBands");
 			    }
 
@@ -820,7 +1125,7 @@ struct RT_RasterClip {
 				    options.emplace_back(option);
 			    }
 
-			    GDALDataset *result = Raster::Clip(dataset, geometry, options);
+			    GDALDataset *result = raster.Clip(geometry, options);
 
 			    if (result == nullptr) {
 				    auto error = Raster::GetLastErrorMsg();
@@ -851,6 +1156,50 @@ struct RT_RasterClip {
 			func.SetDescription(R"(
 				Returns a raster that is clipped by the input geometry.
 				`options` is optional, an array of parameters like [GDALWarp](https://gdal.org/programs/gdalwarp.html).
+			)");
+			func.SetExample(R"(
+				WITH __input AS (
+					SELECT
+						1 AS mosaic_id,
+						RT_RasterFromFile(file) AS raster
+					FROM
+						glob('./test/data/mosaic/*.tiff')
+				),
+				__mosaic AS (
+					SELECT
+						RT_RasterMosaic_Agg(raster, options => ['-r', 'bilinear']) AS mosaic
+					FROM
+						__input
+					GROUP BY
+						mosaic_id
+				),
+				__geometry AS (
+					SELECT geom FROM ST_Read('./test/data/CATAST_Pol_Township-PNA.gpkg')
+				),
+				__clip AS (
+					SELECT
+						RT_RasterClip(mosaic,
+									(SELECT geom FROM __geometry LIMIT 1),
+									options =>
+										[
+											'-r', 'bilinear', '-crop_to_cutline', '-wo', 'CUTLINE_ALL_TOUCHED=TRUE'
+										]
+						) AS clip
+					FROM
+						__mosaic
+				)
+				SELECT
+					ST_Area(RT_GetGeometry(clip)) AS result
+				FROM
+					__clip
+				;
+				┌───────────────────┐
+				│      result       │
+				│      double       │
+				├───────────────────┤
+				│ 44269454.49488351 │
+				│  (44.27 million)  │
+				└───────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
@@ -884,13 +1233,13 @@ struct RT_RasterSplit {
 			    auto tile_size_x = p2.val;
 			    auto tile_size_y = p3.val;
 
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    Raster raster(reinterpret_cast<GDALDataset *>(input));
 
-			    if (dataset->GetRasterCount() == 0) {
+			    if (raster.GetRasterCount() == 0) {
 				    throw InvalidInputException("Input Raster has no RasterBands");
 			    }
 
-			    auto tiles = Raster::Split(dataset, tile_size_x, tile_size_y);
+			    auto tiles = raster.Split(tile_size_x, tile_size_y);
 
 			    // Create a list vector to hold the result
 			    auto current_size = ListVector::GetListSize(result);
@@ -930,6 +1279,33 @@ struct RT_RasterSplit {
 				Splits a raster into smaller tiles of specified size.
 				`tile_size_x` and `tile_size_y` specify the size of each tile in pixels.
 				The result is a list of rasters, each representing a tile of the original raster.
+			)");
+			func.SetExample(R"(
+				WITH __input AS (
+					SELECT
+						UNNEST(RT_RasterSplit(raster, 2048, 2048)) AS raster
+					FROM
+						RT_Read('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				)
+				SELECT
+					RT_Srid(raster) AS srid,
+					RT_Width(raster) AS width,
+					RT_Height(raster) AS height,
+					RT_GetGeometry(raster)::TEXT AS g
+				FROM
+					__input
+				;
+				┌───────┬───────┬────────┬────────────────────────────────────────────────────────────────────────────────────────────┐
+				│ srid  │ width │ height │                                             g                                              │
+				│ int32 │ int32 │ int32  │                                          varchar                                           │
+				├───────┼───────┼────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+				│ 32630 │  2048 │   2048 │ POLYGON ((541020 4755680, 541020 4796640, 581980 4796640, 581980 4755680, 541020 4755680)) │
+				│ 32630 │  1390 │   2048 │ POLYGON ((581980 4755680, 581980 4796640, 609780 4796640, 609780 4755680, 581980 4755680)) │
+				│ 32630 │  2048 │   2048 │ POLYGON ((541020 4714720, 541020 4755680, 581980 4755680, 581980 4714720, 541020 4714720)) │
+				│ 32630 │  1390 │   2048 │ POLYGON ((581980 4714720, 581980 4755680, 609780 4755680, 609780 4714720, 581980 4714720)) │
+				│ 32630 │  2048 │   1226 │ POLYGON ((541020 4690200, 541020 4714720, 581980 4714720, 581980 4690200, 541020 4690200)) │
+				│ 32630 │  1390 │   1226 │ POLYGON ((581980 4690200, 581980 4714720, 609780 4714720, 609780 4690200, 581980 4690200)) │
+				└───────┴───────┴────────┴────────────────────────────────────────────────────────────────────────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");

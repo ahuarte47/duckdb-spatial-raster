@@ -15,6 +15,10 @@ namespace duckdb {
 Raster::Raster(GDALDataset *dataset) : dataset_(dataset) {
 }
 
+Raster::~Raster() {
+	dataset_ = nullptr;
+}
+
 int Raster::GetRasterXSize() const {
 	return dataset_->GetRasterXSize();
 }
@@ -199,9 +203,9 @@ GDALDataset *Raster::BuildVRT(const std::vector<GDALDataset *> &datasets, const 
 	return result.release();
 }
 
-GDALDataset *Raster::Warp(GDALDataset *dataset, const std::vector<std::string> &options) {
+GDALDataset *Raster::Warp(const std::vector<std::string> &options) {
 
-	GDALDatasetH hDataset = GDALDataset::ToHandle(dataset);
+	GDALDatasetH hDataset = GDALDataset::ToHandle(dataset_);
 
 	auto driver = GetGDALDriverManager()->GetDriverByName("MEM");
 	if (!driver) {
@@ -263,9 +267,9 @@ public:
 	}
 };
 
-GDALDataset *Raster::Clip(GDALDataset *dataset, const geometry_t &geometry, const std::vector<std::string> &options) {
+GDALDataset *Raster::Clip(const geometry_t &geometry, const std::vector<std::string> &options) {
 
-	GDALDatasetH hDataset = GDALDataset::ToHandle(dataset);
+	GDALDatasetH hDataset = GDALDataset::ToHandle(dataset_);
 
 	auto driver = GetGDALDriverManager()->GetDriverByName("MEM");
 	if (!driver) {
@@ -287,7 +291,7 @@ GDALDataset *Raster::Clip(GDALDataset *dataset, const geometry_t &geometry, cons
 
 		OGRSpatialReference srs;
 		srs.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
-		const char *proj_ref = dataset->GetProjectionRef();
+		const char *proj_ref = dataset_->GetProjectionRef();
 		if (proj_ref) {
 			srs.importFromWkt(&proj_ref, nullptr);
 		}
@@ -351,8 +355,8 @@ GDALDataset *Raster::Clip(GDALDataset *dataset, const geometry_t &geometry, cons
 	return result.release();
 }
 
-std::vector<GDALDataset *> Raster::Split(GDALDataset *dataset, int32_t tile_size_x, int32_t tile_size_y,
-                                         int32_t overlap_x, int32_t overlap_y) {
+std::vector<GDALDataset *> Raster::Split(int32_t tile_size_x, int32_t tile_size_y, int32_t overlap_x,
+                                         int32_t overlap_y) {
 
 	auto driver = GetGDALDriverManager()->GetDriverByName("MEM");
 	if (!driver) {
@@ -367,9 +371,9 @@ std::vector<GDALDataset *> Raster::Split(GDALDataset *dataset, int32_t tile_size
 		throw InvalidInputException("Overlap values must be non-negative");
 	}
 
-	int32_t cols = dataset->GetRasterXSize();
-	int32_t rows = dataset->GetRasterYSize();
-	int32_t band_count = dataset->GetRasterCount();
+	int32_t cols = dataset_->GetRasterXSize();
+	int32_t rows = dataset_->GetRasterYSize();
+	int32_t band_count = dataset_->GetRasterCount();
 
 	if (tile_size_x + 2 * overlap_x > cols || tile_size_y + 2 * overlap_y > rows) {
 		throw InvalidInputException("Tile size with overlap must not exceed raster dimensions");
@@ -381,9 +385,9 @@ std::vector<GDALDataset *> Raster::Split(GDALDataset *dataset, int32_t tile_size
 
 	CPLErrorReset();
 
-	GDALDataType data_type = dataset->GetRasterBand(1)->GetRasterDataType();
+	GDALDataType data_type = dataset_->GetRasterBand(1)->GetRasterDataType();
 	double gt[6] = {0, 1, 0, 0, 0, -1};
-	dataset->GetGeoTransform(gt);
+	dataset_->GetGeoTransform(gt);
 
 	std::vector<GDALDatasetUniquePtr> tiles;
 
@@ -406,11 +410,11 @@ std::vector<GDALDataset *> Raster::Split(GDALDataset *dataset, int32_t tile_size
 			double gt_tile[6] = {pos.x, gt[1], gt[2], pos.y, gt[4], gt[5]};
 
 			tile->SetGeoTransform(gt_tile);
-			tile->SetProjection(dataset->GetProjectionRef());
-			tile->SetMetadata(dataset->GetMetadata());
+			tile->SetProjection(dataset_->GetProjectionRef());
+			tile->SetMetadata(dataset_->GetMetadata());
 
 			for (int b = 1; b <= band_count; ++b) {
-				GDALRasterBand *source_band = dataset->GetRasterBand(b);
+				GDALRasterBand *source_band = dataset_->GetRasterBand(b);
 				GDALRasterBand *target_band = tile->GetRasterBand(b);
 				std::vector<uint8_t> buffer(x_size * y_size * GDALGetDataTypeSizeBytes(data_type));
 

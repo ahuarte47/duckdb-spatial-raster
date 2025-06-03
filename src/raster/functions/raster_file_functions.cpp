@@ -123,6 +123,25 @@ struct RT_File {
 			func.SetDescription(R"(
 				Loads a raster from a file path.
 			)");
+			func.SetExample(R"(
+				WITH __input AS (
+					SELECT
+						RT_RasterFromFile(file) AS raster
+					FROM
+						glob('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				)
+				SELECT
+					RT_RasterAsFile(raster, './test/data/rasterasfile.tiff', 'Gtiff') AS result
+				FROM
+					__input
+				;
+				┌─────────┐
+				│ result  │
+				│ boolean │
+				├─────────┤
+				│ true    │
+				└─────────┘
+			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
 		});
@@ -146,6 +165,25 @@ struct RT_File {
 			func.SetDescription(R"(
 				Writes a raster to a file path.
 				`write_options` is optional, an array of parameters for the GDAL driver specified.
+			)");
+			func.SetExample(R"(
+				WITH __input AS (
+					SELECT
+						RT_RasterFromFile(file) AS raster
+					FROM
+						glob('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+				)
+				SELECT
+					RT_RasterAsFile(raster, './test/data/rasterasfile.tiff', 'Gtiff') AS result
+				FROM
+					__input
+				;
+				┌─────────┐
+				│ result  │
+				│ boolean │
+				├─────────┤
+				│ true    │
+				└─────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
 			func.SetTag("category", "properties");
