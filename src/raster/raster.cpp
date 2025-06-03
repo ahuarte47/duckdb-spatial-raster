@@ -351,6 +351,97 @@ GDALDataset *Raster::Clip(GDALDataset *dataset, const geometry_t &geometry, cons
 	return result.release();
 }
 
+std::vector<GDALDataset *> Raster::Split(GDALDataset *dataset, int32_t tile_size_x, int32_t tile_size_y,
+                                         int32_t overlap_x, int32_t overlap_y) {
+
+	auto driver = GetGDALDriverManager()->GetDriverByName("MEM");
+	if (!driver) {
+		throw InvalidInputException("Unknown driver 'MEM'");
+	}
+
+	if (tile_size_x <= 0 || tile_size_y <= 0) {
+		throw InvalidInputException("Tile size must be greater than zero");
+	}
+
+	if (overlap_x < 0 || overlap_y < 0) {
+		throw InvalidInputException("Overlap values must be non-negative");
+	}
+
+	int32_t cols = dataset->GetRasterXSize();
+	int32_t rows = dataset->GetRasterYSize();
+	int32_t band_count = dataset->GetRasterCount();
+
+	if (tile_size_x + 2 * overlap_x > cols || tile_size_y + 2 * overlap_y > rows) {
+		throw InvalidInputException("Tile size with overlap must not exceed raster dimensions");
+	}
+
+	if (band_count <= 0) {
+		throw InvalidInputException("Input Raster must have at least one band");
+	}
+
+	CPLErrorReset();
+
+	GDALDataType data_type = dataset->GetRasterBand(1)->GetRasterDataType();
+	double gt[6] = {0, 1, 0, 0, 0, -1};
+	dataset->GetGeoTransform(gt);
+
+	std::vector<GDALDatasetUniquePtr> tiles;
+
+	// Create tiles based on the specified tile size and overlap
+	for (int32_t y = 0; y < rows; y += tile_size_y) {
+		for (int32_t x = 0; x < cols; x += tile_size_x) {
+
+			// Compute the read window, including overlap, and clip to raster bounds
+			int32_t x_off = std::max(0, x - overlap_x);
+			int32_t y_off = std::max(0, y - overlap_y);
+			int32_t x_size = std::min(tile_size_x + 2 * overlap_x, cols - x_off);
+			int32_t y_size = std::min(tile_size_y + 2 * overlap_y, rows - y_off);
+
+			auto tile = GDALDatasetUniquePtr(driver->Create("", x_size, y_size, band_count, data_type, nullptr));
+			if (!tile) {
+				throw InternalException("Failed to create in-memory tile dataset");
+			}
+
+			Point2D pos = rasterToWorldVertex(gt, x_off, y_off);
+			double gt_tile[6] = {pos.x, gt[1], gt[2], pos.y, gt[4], gt[5]};
+
+			tile->SetGeoTransform(gt_tile);
+			tile->SetProjection(dataset->GetProjectionRef());
+			tile->SetMetadata(dataset->GetMetadata());
+
+			for (int b = 1; b <= band_count; ++b) {
+				GDALRasterBand *source_band = dataset->GetRasterBand(b);
+				GDALRasterBand *target_band = tile->GetRasterBand(b);
+				std::vector<uint8_t> buffer(x_size * y_size * GDALGetDataTypeSizeBytes(data_type));
+
+				CPLErr err = source_band->RasterIO(GF_Read, x_off, y_off, x_size, y_size, buffer.data(), x_size, y_size,
+				                                   data_type, 0, 0);
+				if (err != CE_None) {
+					throw InternalException("RasterIO read failed");
+				}
+
+				err = target_band->RasterIO(GF_Write, 0, 0, x_size, y_size, buffer.data(), x_size, y_size, data_type, 0,
+				                            0);
+				if (err != CE_None) {
+					throw InternalException("RasterIO write failed");
+				}
+			}
+
+			tiles.push_back(std::move(tile));
+		}
+	}
+
+	std::vector<GDALDataset *> result;
+	result.reserve(tiles.size());
+
+	for (auto &tile : tiles) {
+		result.push_back(tile.release());
+	}
+	tiles.clear();
+
+	return result;
+}
+
 std::string Raster::GetLastErrorMsg() {
 	return std::string(CPLGetLastErrorMsg());
 }

@@ -858,6 +858,85 @@ struct RT_RasterClip {
 	}
 };
 
+//======================================================================================================================
+// RT_RasterSplit
+//======================================================================================================================
+
+struct RT_RasterSplit {
+
+	static void RasterSplit(DataChunk &args, ExpressionState &state, Vector &result) {
+		D_ASSERT(args.data.size() == 3);
+
+		auto &context = state.GetContext();
+		auto &ctx_state = GDALClientContextState::GetOrCreate(context);
+
+		using POINTER_TYPE = PrimitiveType<uintptr_t>;
+		using INT_TYPE = PrimitiveType<int32_t>;
+		using LIST_TYPE = PrimitiveType<list_entry_t>;
+
+		auto &p1 = args.data[0];
+		auto &p2 = args.data[1];
+		auto &p3 = args.data[2];
+
+		GenericExecutor::ExecuteTernary<POINTER_TYPE, INT_TYPE, INT_TYPE, LIST_TYPE>(
+		    p1, p2, p3, result, args.size(), [&](POINTER_TYPE p1, INT_TYPE p2, INT_TYPE p3) {
+			    auto input = p1.val;
+			    auto tile_size_x = p2.val;
+			    auto tile_size_y = p3.val;
+
+			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+
+			    if (dataset->GetRasterCount() == 0) {
+				    throw InvalidInputException("Input Raster has no RasterBands");
+			    }
+
+			    auto tiles = Raster::Split(dataset, tile_size_x, tile_size_y);
+
+			    // Create a list vector to hold the result
+			    auto current_size = ListVector::GetListSize(result);
+			    auto new_size = current_size + tiles.size();
+
+			    if (ListVector::GetListCapacity(result) < new_size) {
+				    ListVector::Reserve(result, new_size);
+			    }
+
+			    auto &child_entry = ListVector::GetEntry(result);
+			    auto child_vals = FlatVector::GetData<uintptr_t>(child_entry);
+
+			    for (idx_t i = 0; i < tiles.size(); i++) {
+				    auto &tile = tiles[i];
+				    child_vals[current_size + i] = CastPointerToValue(tile);
+				    ctx_state.GetDatasetRegistry().RegisterDataset(tile);
+			    }
+
+			    ListVector::SetListSize(result, new_size);
+			    tiles.clear();
+
+			    return list_entry_t {current_size, new_size - current_size};
+		    });
+	}
+
+	static void Register(DatabaseInstance &db) {
+
+		FunctionBuilder::RegisterScalar(db, "RT_RasterSplit", [](ScalarFunctionBuilder &func) {
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.AddParameter("tile_size_x", LogicalType::INTEGER);
+				variant.AddParameter("tile_size_y", LogicalType::INTEGER);
+				variant.SetReturnType(LogicalType::LIST(RasterTypes::RASTER()));
+				variant.SetFunction(RasterSplit);
+			});
+			func.SetDescription(R"(
+				Splits a raster into smaller tiles of specified size.
+				`tile_size_x` and `tile_size_y` specify the size of each tile in pixels.
+				The result is a list of rasters, each representing a tile of the original raster.
+			)");
+			func.SetTag("ext", "spatial_raster");
+			func.SetTag("category", "properties");
+		});
+	}
+};
+
 } // namespace
 
 // ######################################################################################################################
@@ -873,6 +952,7 @@ void RasterScalarFunctions::Register(DatabaseInstance &db) {
 	RT_Value::Register(db);
 	RT_RasterWarp::Register(db);
 	RT_RasterClip::Register(db);
+	RT_RasterSplit::Register(db);
 }
 
 } // namespace duckdb

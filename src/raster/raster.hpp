@@ -70,6 +70,10 @@ public:
 	static GDALDataset *Clip(GDALDataset *dataset, const geometry_t &geometry,
 	                         const std::vector<std::string> &options = std::vector<std::string>());
 
+	//! Splits a raster into tiles of the given size, with optional overlap
+	static std::vector<GDALDataset *> Split(GDALDataset *dataset, int32_t tile_size_x, int32_t tile_size_y,
+	                                        int32_t overlap_x = 0, int32_t overlap_y = 0);
+
 public:
 	//! Returns the geometric X and Y (longitude and latitude) given a column and row
 	static bool RasterToWorldCoord(Point2D &point, double matrix[], int32_t col, int32_t row);
