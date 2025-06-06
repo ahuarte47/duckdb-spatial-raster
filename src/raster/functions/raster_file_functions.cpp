@@ -201,6 +201,29 @@ struct RT_File {
 
 struct RT_Blob {
 
+	static void RasterFromBlob_00(DataChunk &args, ExpressionState &state, Vector &result) {
+		D_ASSERT(args.data.size() == 2);
+
+		auto &context = state.GetContext();
+		auto &ctx_state = GDALClientContextState::GetOrCreate(context);
+
+		UnaryExecutor::Execute<string_t, uintptr_t>(args.data[0], result, args.size(), [&](string_t mblob) {
+			auto blob_ptr = mblob.GetData();
+			auto blob_size = mblob.GetSize();
+
+			std::vector<std::string> allowed_drivers = {"GTiff"};
+
+			GDALDataset *dataset = GDALDatasetFactory::FromBlob(blob_ptr, blob_size, allowed_drivers);
+			if (dataset == nullptr) {
+				auto error = Raster::GetLastErrorMsg();
+				throw IOException("Could not open file from a Blob (" + error + ")");
+			}
+
+			ctx_state.GetDatasetRegistry().RegisterDataset(dataset);
+			return CastPointerToValue(dataset);
+		});
+	}
+
 	static void RasterFromBlob_01(DataChunk &args, ExpressionState &state, Vector &result) {
 		D_ASSERT(args.data.size() == 2);
 
@@ -271,6 +294,27 @@ struct RT_Blob {
 			    ctx_state.GetDatasetRegistry().RegisterDataset(dataset);
 			    return CastPointerToValue(dataset);
 		    });
+	}
+
+	static void RasterAsBlob_00(DataChunk &args, ExpressionState &state, Vector &result) {
+		D_ASSERT(args.data.size() == 1);
+
+		UnaryExecutor::Execute<uintptr_t, string_t>(args.data[0], result, args.size(), [&](uintptr_t input) {
+			GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+
+			uint64_t blob_size = 0;
+			const char *blob_ptr = GDALDatasetFactory::WriteBlob(dataset, "GTiff", blob_size);
+
+			if (!blob_ptr) {
+				auto error = Raster::GetLastErrorMsg();
+				if (error.length()) {
+					throw IOException("Could not save raster as a Blob (" + error + ")");
+				}
+				return string_t();
+			}
+
+			return string_t(blob_ptr, static_cast<uint32_t>(blob_size));
+		});
 	}
 
 	static void RasterAsBlob_01(DataChunk &args, ExpressionState &state, Vector &result) {
@@ -354,6 +398,11 @@ struct RT_Blob {
 		FunctionBuilder::RegisterScalar(db, "RT_RasterFromBlob", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("blob", LogicalType::BLOB);
+				variant.SetReturnType(RasterTypes::RASTER());
+				variant.SetFunction(RasterFromBlob_00);
+			});
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("blob", LogicalType::BLOB);
 				variant.AddParameter("driver_name", LogicalType::VARCHAR);
 				variant.SetReturnType(RasterTypes::RASTER());
 				variant.SetFunction(RasterFromBlob_01);
@@ -366,6 +415,7 @@ struct RT_Blob {
 			});
 			func.SetDescription(R"(
 				Loads a raster from a blob.
+				`driver_name` is optional, 'GTiff' format by default.
 			)");
 			func.SetExample(R"(
 				WITH __input AS (
@@ -399,6 +449,11 @@ struct RT_Blob {
 		FunctionBuilder::RegisterScalar(db, "RT_RasterAsBlob", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
+				variant.SetReturnType(LogicalType::BLOB);
+				variant.SetFunction(RasterAsBlob_00);
+			});
+			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
+				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("driver_name", LogicalType::VARCHAR);
 				variant.SetReturnType(LogicalType::BLOB);
 				variant.SetFunction(RasterAsBlob_01);
@@ -412,6 +467,7 @@ struct RT_Blob {
 			});
 			func.SetDescription(R"(
 				Writes a raster to a blob.
+				`driver_name` is optional, 'GTiff' format by default.
 				`write_options` is optional, an array of parameters for the GDAL driver specified.
 			)");
 			func.SetExample(R"(

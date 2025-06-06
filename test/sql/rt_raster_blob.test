@@ -9,6 +9,27 @@ WITH __input AS (
 ),
 __blob AS (
 	SELECT
+		RT_RasterAsBlob(raster) AS result
+	FROM
+		__input
+)
+SELECT
+	RT_GetGeometry(RT_RasterFromBlob(result))
+FROM
+	__blob
+;
+----
+POLYGON ((541020 4690200, 541020 4796640, 609780 4796640, 609780 4690200, 541020 4690200))
+
+query I
+WITH __input AS (
+	SELECT
+		RT_RasterFromFile(file) AS raster
+	FROM
+		glob('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+),
+__blob AS (
+	SELECT
 		RT_RasterAsBlob(raster, 'GTiff') AS result
 	FROM
 		__input
