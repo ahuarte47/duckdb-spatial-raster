@@ -58,7 +58,7 @@ struct RT_Srid {
 				└───────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 	}
 };
@@ -155,7 +155,7 @@ struct RT_Geometry {
 				└────────────────────────────────────────────────────────────────────────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_GetBBox", [](ScalarFunctionBuilder &func) {
@@ -181,7 +181,7 @@ struct RT_Geometry {
 				└────────────────────────────────────────────────────────────────────────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 	}
 };
@@ -289,7 +289,7 @@ struct RT_Properties {
 				└───────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_Height", [](ScalarFunctionBuilder &func) {
@@ -315,7 +315,7 @@ struct RT_Properties {
 				└───────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_NumBands", [](ScalarFunctionBuilder &func) {
@@ -341,7 +341,7 @@ struct RT_Properties {
 				└───────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_UpperLeftX", [](ScalarFunctionBuilder &func) {
@@ -367,7 +367,7 @@ struct RT_Properties {
 				└──────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_UpperLeftY", [](ScalarFunctionBuilder &func) {
@@ -394,7 +394,7 @@ struct RT_Properties {
 				└────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_ScaleX", [](ScalarFunctionBuilder &func) {
@@ -421,7 +421,7 @@ struct RT_Properties {
 				└─────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_ScaleY", [](ScalarFunctionBuilder &func) {
@@ -448,7 +448,7 @@ struct RT_Properties {
 				└─────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_SkewX", [](ScalarFunctionBuilder &func) {
@@ -475,7 +475,7 @@ struct RT_Properties {
 				└────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_SkewY", [](ScalarFunctionBuilder &func) {
@@ -502,7 +502,7 @@ struct RT_Properties {
 				└────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_PixelWidth", [](ScalarFunctionBuilder &func) {
@@ -529,7 +529,7 @@ struct RT_Properties {
 				└──────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_PixelHeight", [](ScalarFunctionBuilder &func) {
@@ -556,7 +556,7 @@ struct RT_Properties {
 				└───────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 	}
 };
@@ -653,7 +653,7 @@ struct RT_RasterToWorldCoord {
 				└────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_RasterToWorldCoordX", [](ScalarFunctionBuilder &func) {
@@ -682,7 +682,7 @@ struct RT_RasterToWorldCoord {
 				└──────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_RasterToWorldCoordY", [](ScalarFunctionBuilder &func) {
@@ -712,7 +712,7 @@ struct RT_RasterToWorldCoord {
 				└────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 	}
 };
@@ -809,7 +809,7 @@ struct RT_WorldToRasterCoord {
 				└──────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_WorldToRasterCoordX", [](ScalarFunctionBuilder &func) {
@@ -838,7 +838,7 @@ struct RT_WorldToRasterCoord {
 				└───────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_WorldToRasterCoordY", [](ScalarFunctionBuilder &func) {
@@ -867,7 +867,7 @@ struct RT_WorldToRasterCoord {
 				└───────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 	}
 };
@@ -955,7 +955,7 @@ struct RT_Value {
 				└────────┴─────────┴─────────┴────────┴─────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 	}
 };
@@ -1048,7 +1048,7 @@ struct RT_RasterWarp {
 				└─────────┴─────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "construction");
 		});
 	}
 };
@@ -1202,7 +1202,7 @@ struct RT_RasterClip {
 				└───────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "construction");
 		});
 	}
 };
@@ -1308,7 +1308,7 @@ struct RT_RasterSplit {
 				└───────┴───────┴────────┴────────────────────────────────────────────────────────────────────────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "construction");
 		});
 	}
 };

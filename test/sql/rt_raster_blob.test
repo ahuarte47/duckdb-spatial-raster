@@ -1,0 +1,68 @@
+require spatial_raster
+
+query I
+WITH __input AS (
+	SELECT
+		RT_RasterFromFile(file) AS raster
+	FROM
+		glob('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+),
+__blob AS (
+	SELECT
+		RT_RasterAsBlob(raster, 'GTiff') AS result
+	FROM
+		__input
+)
+SELECT
+	RT_GetGeometry(RT_RasterFromBlob(result, 'GTiff'))
+FROM
+	__blob
+;
+----
+POLYGON ((541020 4690200, 541020 4796640, 609780 4796640, 609780 4690200, 541020 4690200))
+
+query I
+WITH __input AS (
+	SELECT
+		RT_RasterFromFile(file) AS raster
+	FROM
+		glob('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+),
+__blob AS (
+	SELECT
+		RT_RasterAsBlob(raster, 'COG') AS result
+	FROM
+		__input
+)
+SELECT
+	RT_GetGeometry(RT_RasterFromBlob(result, ['COG', 'GTiff']))
+FROM
+	__blob
+;
+----
+POLYGON ((541020 4690200, 541020 4796640, 609780 4796640, 609780 4690200, 541020 4690200))
+
+statement ok
+WITH __input AS (
+	SELECT
+		RT_RasterFromFile(file) AS raster
+	FROM
+		glob('./test/data/mosaic/SCL.tif-land-clip00.tiff')
+),
+__blob AS (
+	SELECT
+		RT_RasterAsBlob(raster, 'GTiff') AS result
+	FROM
+		__input
+),
+__raster AS (
+	SELECT
+		RT_RasterFromBlob(result, 'GTiff') AS raster
+	FROM
+		__blob
+)
+SELECT
+	RT_RasterAsFile(raster, '__TEST_DIR__/rasterasfile.tiff', 'Gtiff') AS result
+FROM
+	__raster
+;

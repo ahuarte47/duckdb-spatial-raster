@@ -149,7 +149,7 @@ struct RT_RasterBand {
 				└─────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_GetBandNoDataValue", [](ScalarFunctionBuilder &func) {
@@ -176,7 +176,7 @@ struct RT_RasterBand {
 				└──────────────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_GetBandPixelType", [](ScalarFunctionBuilder &func) {
@@ -220,7 +220,7 @@ struct RT_RasterBand {
 				└────────────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_GetBandPixelTypeName", [](ScalarFunctionBuilder &func) {
@@ -264,7 +264,7 @@ struct RT_RasterBand {
 				└────────────────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_GetBandColorInterpretation", [](ScalarFunctionBuilder &func) {
@@ -310,7 +310,7 @@ struct RT_RasterBand {
 				└──────────────────────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 
 		FunctionBuilder::RegisterScalar(db, "RT_GetBandColorInterpretationName", [](ScalarFunctionBuilder &func) {
@@ -356,7 +356,7 @@ struct RT_RasterBand {
 				└──────────────────────────────────────────────┘
 			)");
 			func.SetTag("ext", "spatial_raster");
-			func.SetTag("category", "properties");
+			func.SetTag("category", "property");
 		});
 	}
 };
