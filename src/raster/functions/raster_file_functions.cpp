@@ -4,7 +4,6 @@
 // DuckDB
 #include "duckdb/main/database.hpp"
 #include "duckdb/main/extension_util.hpp"
-#include "duckdb/common/types/uuid.hpp"
 #include "duckdb/common/vector_operations/generic_executor.hpp"
 // Spatial
 #include "spatial/util/function_builder.hpp"
@@ -202,86 +201,7 @@ struct RT_File {
 
 struct RT_Blob {
 
-	static std::string GetFileExtensionForDriver(const std::string &driver_name) {
-
-		auto driver = GetGDALDriverManager()->GetDriverByName(driver_name.c_str());
-		if (!driver) {
-			throw InvalidInputException("Unknown driver '%s'", driver_name.c_str());
-		}
-
-		// Get file extension for the GDAL driver
-
-		const char *extension = driver->GetMetadataItem(GDAL_DMD_EXTENSION);
-		if (extension && *extension) {
-			return std::string(extension);
-		}
-
-		const char *extensions = driver->GetMetadataItem("DMD_EXTENSIONS");
-		if (extensions && *extensions) {
-			if (extensions && *extensions) {
-				std::istringstream iss(extensions);
-				std::string first_ext;
-				iss >> first_ext;
-				return std::string(first_ext);
-			}
-		}
-		return "dat";
-	}
-
 	static void RasterFromBlob_01(DataChunk &args, ExpressionState &state, Vector &result) {
-		D_ASSERT(args.data.size() == 2);
-
-		auto &context = state.GetContext();
-		auto &ctx_state = GDALClientContextState::GetOrCreate(context);
-
-		using BLOB_TYPE = PrimitiveType<string_t>;
-		using LIST_TYPE = PrimitiveType<list_entry_t>;
-		using POINTER_TYPE = PrimitiveType<uintptr_t>;
-
-		auto &p1 = args.data[0];
-		auto &p2 = args.data[1];
-		auto &p2_entry = ListVector::GetEntry(p2);
-
-		GenericExecutor::ExecuteBinary<BLOB_TYPE, LIST_TYPE, POINTER_TYPE>(
-		    p1, p2, result, args.size(), [&](BLOB_TYPE p1, LIST_TYPE p2_offlen) {
-			    auto mblob = p1.val;
-			    auto offlen = p2_offlen.val;
-
-			    auto allowed_drivers = std::vector<std::string>();
-
-			    for (idx_t i = offlen.offset; i < offlen.offset + offlen.length; i++) {
-				    const auto &child_value = p2_entry.GetValue(i);
-				    const auto option = child_value.ToString();
-				    allowed_drivers.emplace_back(option);
-			    }
-
-			    if (allowed_drivers.empty()) {
-				    throw InvalidInputException("Driver name[s] must be specified");
-			    }
-
-			    std::string file_ext = RT_Blob::GetFileExtensionForDriver(allowed_drivers[0]);
-			    std::string mem_file_name =
-			        "/vsimem/tmp-" + UUID::ToString(UUID::GenerateRandomUUID()) + "." + file_ext;
-
-			    auto blob_ptr = mblob.GetData();
-			    auto blob_size = mblob.GetSize();
-			    VSIFCloseL(VSIFileFromMemBuffer(mem_file_name.c_str(), (GByte *)(blob_ptr), blob_size, FALSE));
-
-			    GDALDataset *dataset = GDALDatasetFactory::FromFile(mem_file_name, allowed_drivers);
-			    if (dataset == nullptr) {
-				    VSIUnlink(mem_file_name.c_str());
-
-				    auto error = Raster::GetLastErrorMsg();
-				    throw IOException("Could not open file from a Blob (" + error + ")");
-			    }
-			    VSIUnlink(mem_file_name.c_str());
-
-			    ctx_state.GetDatasetRegistry().RegisterDataset(dataset);
-			    return CastPointerToValue(dataset);
-		    });
-	}
-
-	static void RasterFromBlob_02(DataChunk &args, ExpressionState &state, Vector &result) {
 		D_ASSERT(args.data.size() == 2);
 
 		auto &context = state.GetContext();
@@ -297,21 +217,56 @@ struct RT_Blob {
 				    throw InvalidInputException("Driver name must be specified");
 			    }
 
-			    std::string file_ext = RT_Blob::GetFileExtensionForDriver(gdal_driver_name);
-			    std::string mem_file_name =
-			        "/vsimem/tmp-" + UUID::ToString(UUID::GenerateRandomUUID()) + "." + file_ext;
-
 			    std::vector<std::string> allowed_drivers = {gdal_driver_name};
-			    VSIFCloseL(VSIFileFromMemBuffer(mem_file_name.c_str(), (GByte *)(blob_ptr), blob_size, FALSE));
 
-			    GDALDataset *dataset = GDALDatasetFactory::FromFile(mem_file_name, allowed_drivers);
+			    GDALDataset *dataset = GDALDatasetFactory::FromBlob(blob_ptr, blob_size, allowed_drivers);
 			    if (dataset == nullptr) {
-				    VSIUnlink(mem_file_name.c_str());
-
 				    auto error = Raster::GetLastErrorMsg();
 				    throw IOException("Could not open file from a Blob (" + error + ")");
 			    }
-			    VSIUnlink(mem_file_name.c_str());
+
+			    ctx_state.GetDatasetRegistry().RegisterDataset(dataset);
+			    return CastPointerToValue(dataset);
+		    });
+	}
+
+	static void RasterFromBlob_02(DataChunk &args, ExpressionState &state, Vector &result) {
+		D_ASSERT(args.data.size() == 2);
+
+		auto &context = state.GetContext();
+		auto &ctx_state = GDALClientContextState::GetOrCreate(context);
+
+		using BLOB_TYPE = PrimitiveType<string_t>;
+		using LIST_TYPE = PrimitiveType<list_entry_t>;
+		using POINTER_TYPE = PrimitiveType<uintptr_t>;
+
+		auto &p1 = args.data[0];
+		auto &p2 = args.data[1];
+		auto &p2_entry = ListVector::GetEntry(p2);
+
+		GenericExecutor::ExecuteBinary<BLOB_TYPE, LIST_TYPE, POINTER_TYPE>(
+		    p1, p2, result, args.size(), [&](BLOB_TYPE p1, LIST_TYPE p2_offlen) {
+			    auto blob_ptr = p1.val.GetData();
+			    auto blob_size = p1.val.GetSize();
+			    auto offlen = p2_offlen.val;
+
+			    auto allowed_drivers = std::vector<std::string>();
+
+			    for (idx_t i = offlen.offset; i < offlen.offset + offlen.length; i++) {
+				    const auto &child_value = p2_entry.GetValue(i);
+				    const auto option = child_value.ToString();
+				    allowed_drivers.emplace_back(option);
+			    }
+
+			    if (allowed_drivers.empty()) {
+				    throw InvalidInputException("Driver name[s] must be specified");
+			    }
+
+			    GDALDataset *dataset = GDALDatasetFactory::FromBlob(blob_ptr, blob_size, allowed_drivers);
+			    if (dataset == nullptr) {
+				    auto error = Raster::GetLastErrorMsg();
+				    throw IOException("Could not open file from a Blob (" + error + ")");
+			    }
 
 			    ctx_state.GetDatasetRegistry().RegisterDataset(dataset);
 			    return CastPointerToValue(dataset);
@@ -330,11 +285,10 @@ struct RT_Blob {
 				    throw InvalidInputException("Driver name must be specified");
 			    }
 
-			    std::string file_ext = RT_Blob::GetFileExtensionForDriver(gdal_driver_name);
-			    std::string mem_file_name =
-			        "/vsimem/tmp-" + UUID::ToString(UUID::GenerateRandomUUID()) + "." + file_ext;
+			    uint64_t blob_size = 0;
+			    const char *blob_ptr = GDALDatasetFactory::WriteBlob(dataset, gdal_driver_name, blob_size);
 
-			    if (!GDALDatasetFactory::WriteFile(dataset, mem_file_name, gdal_driver_name)) {
+			    if (!blob_ptr) {
 				    auto error = Raster::GetLastErrorMsg();
 				    if (error.length()) {
 					    throw IOException("Could not save raster as a Blob (" + error + ")");
@@ -342,12 +296,7 @@ struct RT_Blob {
 				    return string_t();
 			    }
 
-			    // Get stream of bytes of the created memory file
-			    GUIntBig blob_size = 0;
-			    GByte *blob_ptr = VSIGetMemFileBuffer(mem_file_name.c_str(), &blob_size, TRUE);
-			    VSIUnlink(mem_file_name.c_str());
-
-			    return string_t((const char *)blob_ptr, static_cast<uint32_t>(blob_size));
+			    return string_t(blob_ptr, static_cast<uint32_t>(blob_size));
 		    });
 	}
 
@@ -377,10 +326,6 @@ struct RT_Blob {
 				    throw InvalidInputException("Driver name must be specified");
 			    }
 
-			    std::string file_ext = RT_Blob::GetFileExtensionForDriver(gdal_driver_name);
-			    std::string mem_file_name =
-			        "/vsimem/tmp-" + UUID::ToString(UUID::GenerateRandomUUID()) + "." + file_ext;
-
 			    auto options = std::vector<std::string>();
 
 			    for (idx_t i = offlen.offset; i < offlen.offset + offlen.length; i++) {
@@ -389,7 +334,10 @@ struct RT_Blob {
 				    options.emplace_back(option);
 			    }
 
-			    if (!GDALDatasetFactory::WriteFile(dataset, mem_file_name, gdal_driver_name, options)) {
+			    uint64_t blob_size = 0;
+			    const char *blob_ptr = GDALDatasetFactory::WriteBlob(dataset, gdal_driver_name, blob_size, options);
+
+			    if (!blob_ptr) {
 				    auto error = Raster::GetLastErrorMsg();
 				    if (error.length()) {
 					    throw IOException("Could not save raster as a Blob (" + error + ")");
@@ -397,12 +345,7 @@ struct RT_Blob {
 				    return string_t();
 			    }
 
-			    // Get stream of bytes of the created memory file.
-			    GUIntBig blob_size = 0;
-			    GByte *blob_ptr = VSIGetMemFileBuffer(mem_file_name.c_str(), &blob_size, TRUE);
-			    VSIUnlink(mem_file_name.c_str());
-
-			    return string_t((const char *)blob_ptr, static_cast<uint32_t>(blob_size));
+			    return string_t(blob_ptr, static_cast<uint32_t>(blob_size));
 		    });
 	}
 
@@ -411,13 +354,13 @@ struct RT_Blob {
 		FunctionBuilder::RegisterScalar(db, "RT_RasterFromBlob", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("blob", LogicalType::BLOB);
-				variant.AddParameter("driver_names", LogicalType::LIST(LogicalType::VARCHAR));
+				variant.AddParameter("driver_name", LogicalType::VARCHAR);
 				variant.SetReturnType(RasterTypes::RASTER());
 				variant.SetFunction(RasterFromBlob_01);
 			});
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("blob", LogicalType::BLOB);
-				variant.AddParameter("driver_name", LogicalType::VARCHAR);
+				variant.AddParameter("driver_names", LogicalType::LIST(LogicalType::VARCHAR));
 				variant.SetReturnType(RasterTypes::RASTER());
 				variant.SetFunction(RasterFromBlob_02);
 			});

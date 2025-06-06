@@ -1,5 +1,6 @@
 #include "gdal_dataset_factory.hpp"
 #include "gdal_priv.h"
+#include "duckdb/common/types/uuid.hpp"
 
 namespace duckdb {
 
@@ -15,6 +16,50 @@ GDALDataset *GDALDatasetFactory::FromFile(const std::string &file_path, const st
 	                                         gdal_allowed_drivers.empty() ? nullptr : gdal_allowed_drivers.data(),
 	                                         gdal_open_options.empty() ? nullptr : gdal_open_options.data(),
 	                                         gdal_sibling_files.empty() ? nullptr : gdal_sibling_files.data());
+
+	return dataset;
+}
+
+//! Get a valid file extension for a GDAL driver
+static std::string GetFileExtensionForDriver(const std::string &driver_name) {
+
+	auto driver = GetGDALDriverManager()->GetDriverByName(driver_name.c_str());
+	if (!driver) {
+		throw InvalidInputException("Unknown driver '%s'", driver_name.c_str());
+	}
+
+	const char *extension = driver->GetMetadataItem(GDAL_DMD_EXTENSION);
+	if (extension && *extension) {
+		return std::string(extension);
+	}
+
+	const char *extensions = driver->GetMetadataItem("DMD_EXTENSIONS");
+	if (extensions && *extensions) {
+		if (extensions && *extensions) {
+			std::istringstream iss(extensions);
+			std::string first_ext;
+			iss >> first_ext;
+			return std::string(first_ext);
+		}
+	}
+	return "dat";
+}
+
+GDALDataset *GDALDatasetFactory::FromBlob(const char *blob, const uint64_t blob_size,
+                                          const std::vector<std::string> &allowed_drivers,
+                                          const std::vector<std::string> &open_options) {
+
+	if (allowed_drivers.empty()) {
+		throw InvalidInputException("Driver name[s] must be specified");
+	}
+
+	std::string file_ext = GetFileExtensionForDriver(allowed_drivers[0]);
+	std::string mem_file_name = "/vsimem/tmp-" + UUID::ToString(UUID::GenerateRandomUUID()) + "." + file_ext;
+
+	VSIFCloseL(VSIFileFromMemBuffer(mem_file_name.c_str(), (GByte *)(blob), blob_size, FALSE));
+
+	GDALDataset *dataset = GDALDatasetFactory::FromFile(mem_file_name, allowed_drivers, open_options);
+	VSIUnlink(mem_file_name.c_str());
 
 	return dataset;
 }
@@ -90,6 +135,26 @@ bool GDALDatasetFactory::WriteFile(GDALDataset *dataset, const std::string &file
 	output->FlushCache();
 
 	return true;
+}
+
+const char *GDALDatasetFactory::WriteBlob(GDALDataset *dataset, const std::string &driver_name, uint64_t &blob_size,
+                                          const std::vector<std::string> &write_options) {
+
+	std::string file_ext = GetFileExtensionForDriver(driver_name);
+	std::string mem_file_name = "/vsimem/tmp-" + UUID::ToString(UUID::GenerateRandomUUID()) + "." + file_ext;
+
+	if (!GDALDatasetFactory::WriteFile(dataset, mem_file_name, driver_name, write_options)) {
+		blob_size = 0;
+		return nullptr;
+	}
+
+	// Get stream of bytes of the created memory file
+	GUIntBig blob_usize = 0;
+	GByte *blob_ptr = VSIGetMemFileBuffer(mem_file_name.c_str(), &blob_usize, TRUE);
+	VSIUnlink(mem_file_name.c_str());
+
+	blob_size = static_cast<uint64_t>(blob_usize);
+	return (const char *)blob_ptr;
 }
 
 std::vector<char const *> GDALDatasetFactory::FromVectorOfStrings(const std::vector<std::string> &input) {
