@@ -11,6 +11,7 @@
 #include "spatial/util/function_builder.hpp"
 // GDAL
 #include "gdal_priv.h"
+#include "modules/gdal/gdal_dataset_ts.hpp"
 
 namespace duckdb {
 
@@ -27,7 +28,7 @@ struct RT_RasterBand {
 
 		BinaryExecutor::Execute<uintptr_t, int32_t, bool>(
 		    args.data[0], args.data[1], result, args.size(), [&](uintptr_t input, int32_t band_num) {
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    GDALDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(input)->get();
 			    return dataset->GetRasterCount() >= band_num;
 		    });
 	}
@@ -37,7 +38,7 @@ struct RT_RasterBand {
 
 		BinaryExecutor::Execute<uintptr_t, int32_t, double_t>(
 		    args.data[0], args.data[1], result, args.size(), [&](uintptr_t input, int32_t band_num) {
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    GDALDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(input)->get();
 
 			    if (band_num < 1) {
 				    throw InvalidInputException("BandNum must be greater than 0");
@@ -55,7 +56,7 @@ struct RT_RasterBand {
 
 		BinaryExecutor::Execute<uintptr_t, int32_t, int32_t>(
 		    args.data[0], args.data[1], result, args.size(), [&](uintptr_t input, int32_t band_num) {
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    GDALDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(input)->get();
 
 			    if (band_num < 1) {
 				    throw InvalidInputException("BandNum must be greater than 0");
@@ -73,7 +74,7 @@ struct RT_RasterBand {
 
 		BinaryExecutor::Execute<uintptr_t, int32_t, string_t>(
 		    args.data[0], args.data[1], result, args.size(), [&](uintptr_t input, int32_t band_num) {
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    GDALDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(input)->get();
 
 			    if (band_num < 1) {
 				    throw InvalidInputException("BandNum must be greater than 0");
@@ -91,7 +92,7 @@ struct RT_RasterBand {
 
 		BinaryExecutor::Execute<uintptr_t, int32_t, int32_t>(
 		    args.data[0], args.data[1], result, args.size(), [&](uintptr_t input, int32_t band_num) {
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    GDALDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(input)->get();
 
 			    if (band_num < 1) {
 				    throw InvalidInputException("BandNum must be greater than 0");
@@ -109,7 +110,7 @@ struct RT_RasterBand {
 
 		BinaryExecutor::Execute<uintptr_t, int32_t, string_t>(
 		    args.data[0], args.data[1], result, args.size(), [&](uintptr_t input, int32_t band_num) {
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    GDALDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(input)->get();
 
 			    if (band_num < 1) {
 				    throw InvalidInputException("BandNum must be greater than 0");

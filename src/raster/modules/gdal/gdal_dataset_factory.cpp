@@ -1,12 +1,14 @@
 #include "gdal_dataset_factory.hpp"
 #include "gdal_priv.h"
+#include "modules/gdal/gdal_dataset_ts.hpp"
 #include "duckdb/common/types/uuid.hpp"
 
 namespace duckdb {
 
-GDALDataset *GDALDatasetFactory::FromFile(const std::string &file_path, const std::vector<std::string> &allowed_drivers,
-                                          const std::vector<std::string> &open_options,
-                                          const std::vector<std::string> &sibling_files) {
+GDALThreadSafeDataset *GDALDatasetFactory::FromFile(const std::string &file_path,
+                                                    const std::vector<std::string> &allowed_drivers,
+                                                    const std::vector<std::string> &open_options,
+                                                    const std::vector<std::string> &sibling_files) {
 
 	auto gdal_allowed_drivers = GDALDatasetFactory::FromVectorOfStrings(allowed_drivers);
 	auto gdal_open_options = GDALDatasetFactory::FromVectorOfStrings(open_options);
@@ -17,7 +19,7 @@ GDALDataset *GDALDatasetFactory::FromFile(const std::string &file_path, const st
 	                                         gdal_open_options.empty() ? nullptr : gdal_open_options.data(),
 	                                         gdal_sibling_files.empty() ? nullptr : gdal_sibling_files.data());
 
-	return dataset;
+	return dataset ? new GDALThreadSafeDataset(dataset) : nullptr;
 }
 
 //! Get a valid file extension for a GDAL driver
@@ -45,9 +47,9 @@ static std::string GetFileExtensionForDriver(const std::string &driver_name) {
 	return "dat";
 }
 
-GDALDataset *GDALDatasetFactory::FromBlob(const char *blob, const uint64_t blob_size,
-                                          const std::vector<std::string> &allowed_drivers,
-                                          const std::vector<std::string> &open_options) {
+GDALThreadSafeDataset *GDALDatasetFactory::FromBlob(const char *blob, const uint64_t blob_size,
+                                                    const std::vector<std::string> &allowed_drivers,
+                                                    const std::vector<std::string> &open_options) {
 
 	if (allowed_drivers.empty()) {
 		throw InvalidInputException("Driver name[s] must be specified");
@@ -58,14 +60,15 @@ GDALDataset *GDALDatasetFactory::FromBlob(const char *blob, const uint64_t blob_
 
 	VSIFCloseL(VSIFileFromMemBuffer(mem_file_name.c_str(), (GByte *)(blob), blob_size, FALSE));
 
-	GDALDataset *dataset = GDALDatasetFactory::FromFile(mem_file_name, allowed_drivers, open_options);
+	GDALThreadSafeDataset *dataset = GDALDatasetFactory::FromFile(mem_file_name, allowed_drivers, open_options);
 	VSIUnlink(mem_file_name.c_str());
 
 	return dataset;
 }
 
-bool GDALDatasetFactory::WriteFile(GDALDataset *dataset, const std::string &file_path, const std::string &driver_name,
-                                   const std::vector<std::string> &write_options) {
+bool GDALDatasetFactory::WriteFile(GDALThreadSafeDataset *dataset, const std::string &file_path,
+                                   const std::string &driver_name, const std::vector<std::string> &write_options) {
+
 	auto driver = GetGDALDriverManager()->GetDriverByName(driver_name.c_str());
 
 	if (!driver) {
@@ -80,21 +83,24 @@ bool GDALDatasetFactory::WriteFile(GDALDataset *dataset, const std::string &file
 	CPLErrorReset();
 
 	if (copy_available) {
-		output = GDALDatasetUniquePtr(driver->CreateCopy(file_path.c_str(), dataset, FALSE, gdal_options, NULL, NULL));
+		output = GDALDatasetUniquePtr(
+		    driver->CreateCopy(file_path.c_str(), dataset->get(), FALSE, gdal_options, NULL, NULL));
 
 		if (output.get() == nullptr) {
 			return false;
 		}
 	} else {
-		int cols = dataset->GetRasterXSize();
-		int rows = dataset->GetRasterYSize();
-		int band_count = dataset->GetRasterCount();
+		GDALDataset *dataset_ = dataset->get();
+
+		int cols = dataset_->GetRasterXSize();
+		int rows = dataset_->GetRasterYSize();
+		int band_count = dataset_->GetRasterCount();
 
 		if (band_count == 0) {
 			throw InvalidInputException("Input Raster has no RasterBands");
 		}
 
-		GDALRasterBand *raster_band = dataset->GetRasterBand(1);
+		GDALRasterBand *raster_band = dataset_->GetRasterBand(1);
 		GDALDataType data_type = raster_band->GetRasterDataType();
 		int date_type_size = GDALGetDataTypeSize(data_type);
 
@@ -106,16 +112,16 @@ bool GDALDatasetFactory::WriteFile(GDALDataset *dataset, const std::string &file
 		}
 
 		double gt[6] = {0, 1, 0, 0, 0, -1};
-		dataset->GetGeoTransform(gt);
+		dataset_->GetGeoTransform(gt);
 		output->SetGeoTransform(gt);
 
-		output->SetProjection(dataset->GetProjectionRef());
-		output->SetMetadata(dataset->GetMetadata());
+		output->SetProjection(dataset_->GetProjectionRef());
+		output->SetMetadata(dataset_->GetMetadata());
 
 		void *pafScanline = CPLMalloc(date_type_size * cols * rows);
 
 		for (int i = 1; i <= band_count; i++) {
-			GDALRasterBand *source_band = dataset->GetRasterBand(i);
+			GDALRasterBand *source_band = dataset_->GetRasterBand(i);
 			GDALRasterBand *target_band = output->GetRasterBand(i);
 
 			target_band->SetMetadata(source_band->GetMetadata());
@@ -137,8 +143,8 @@ bool GDALDatasetFactory::WriteFile(GDALDataset *dataset, const std::string &file
 	return true;
 }
 
-const char *GDALDatasetFactory::WriteBlob(GDALDataset *dataset, const std::string &driver_name, uint64_t &blob_size,
-                                          const std::vector<std::string> &write_options) {
+const char *GDALDatasetFactory::WriteBlob(GDALThreadSafeDataset *dataset, const std::string &driver_name,
+                                          uint64_t &blob_size, const std::vector<std::string> &write_options) {
 
 	std::string file_ext = GetFileExtensionForDriver(driver_name);
 	std::string mem_file_name = "/vsimem/tmp-" + UUID::ToString(UUID::GenerateRandomUUID()) + "." + file_ext;

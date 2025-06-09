@@ -11,6 +11,7 @@
 // GDAL
 #include "gdal_priv.h"
 #include "modules/gdal/gdal_context_state.hpp"
+#include "modules/gdal/gdal_dataset_ts.hpp"
 
 namespace duckdb {
 
@@ -36,7 +37,7 @@ struct RT_RasterUnion_Agg {
 			vrt_options.push_back("-separate");
 			vrt_options.insert(vrt_options.end(), options.begin(), options.end());
 
-			GDALDataset *result = Raster::BuildVRT(*datasets, vrt_options);
+			GDALThreadSafeDataset *result = Raster::BuildVRT(*datasets, vrt_options);
 			state.Destroy();
 
 			if (result == nullptr) {
@@ -132,7 +133,7 @@ struct RT_RasterMosaic_Agg {
 			std::vector<std::string> vrt_options;
 			vrt_options.insert(vrt_options.end(), options.begin(), options.end());
 
-			GDALDataset *result = Raster::BuildVRT(*datasets, vrt_options);
+			GDALThreadSafeDataset *result = Raster::BuildVRT(*datasets, vrt_options);
 			state.Destroy();
 
 			if (result == nullptr) {

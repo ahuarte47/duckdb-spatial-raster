@@ -1,22 +1,22 @@
 #include "raster_value.hpp"
 #include "raster_types.hpp"
-#include "gdal_priv.h"
+#include "modules/gdal/gdal_dataset_ts.hpp"
 
 namespace duckdb {
 
-Value RasterValue::CreateValue(GDALDataset *dataset) {
+Value RasterValue::CreateValue(GDALThreadSafeDataset *dataset) {
 	Value value = Value::POINTER(CastPointerToValue(dataset));
 	value.Reinterpret(RasterTypes::RASTER());
 	return value;
 }
 
-GDALDataset *RasterValue::operator->() const {
-	GDALDataset *dataset = reinterpret_cast<GDALDataset *>(GetValueUnsafe<uint64_t>());
+GDALThreadSafeDataset *RasterValue::operator->() const {
+	GDALThreadSafeDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(GetValueUnsafe<uint64_t>());
 	return dataset;
 }
 
-GDALDataset *RasterValue::get() const {
-	GDALDataset *dataset = reinterpret_cast<GDALDataset *>(GetValueUnsafe<uint64_t>());
+GDALThreadSafeDataset *RasterValue::get() const {
+	GDALThreadSafeDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(GetValueUnsafe<uint64_t>());
 	return dataset;
 }
 

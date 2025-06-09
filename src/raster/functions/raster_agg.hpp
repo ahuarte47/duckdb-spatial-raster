@@ -2,13 +2,13 @@
 #include "duckdb/function/aggregate_function.hpp"
 #include <vector>
 
-class GDALDataset;
-
 namespace duckdb {
+
+class GDALThreadSafeDataset;
 
 struct RasterAggState {
 	bool is_set;
-	std::vector<GDALDataset *> *datasets;
+	std::vector<GDALThreadSafeDataset *> *datasets;
 
 	void Destroy() {
 		if (datasets) {
@@ -23,7 +23,7 @@ struct RasterAggUnaryOperation {
 	template <class STATE>
 	static void Initialize(STATE &state) {
 		state.is_set = false;
-		state.datasets = new std::vector<GDALDataset *>();
+		state.datasets = new std::vector<GDALThreadSafeDataset *>();
 	}
 
 	template <class STATE>
@@ -45,7 +45,7 @@ struct RasterAggUnaryOperation {
 
 	template <class INPUT_TYPE, class STATE, class OP>
 	static void Operation(STATE &state, const INPUT_TYPE &input, AggregateUnaryInput &) {
-		GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+		GDALThreadSafeDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(input);
 		state.is_set = true;
 		state.datasets->emplace_back(dataset);
 	}
@@ -65,7 +65,7 @@ struct RasterAggBinaryOperation {
 	template <class STATE>
 	static void Initialize(STATE &state) {
 		state.is_set = false;
-		state.datasets = new std::vector<GDALDataset *>();
+		state.datasets = new std::vector<GDALThreadSafeDataset *>();
 	}
 
 	template <class STATE>
@@ -87,7 +87,7 @@ struct RasterAggBinaryOperation {
 
 	template <class INPUT_TYPE, class OPTS_TYPE, class STATE, class OP>
 	static void Operation(STATE &state, const INPUT_TYPE &input, const OPTS_TYPE &opts, AggregateBinaryInput &) {
-		GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+		GDALThreadSafeDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(input);
 		state.is_set = true;
 		state.datasets->emplace_back(dataset);
 	}

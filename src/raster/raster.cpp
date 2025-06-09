@@ -9,33 +9,36 @@
 #include "gdal_utils.h"
 #include "gdalwarper.h"
 #include <float.h> /* for FLT_EPSILON */
+#include "modules/gdal/gdal_dataset_ts.hpp"
 
 namespace duckdb {
 
-Raster::Raster(GDALDataset *dataset) : dataset_(dataset) {
+Raster::Raster(GDALThreadSafeDataset *dataset) : dataset_(dataset) {
+	dataset_->AcquireMutex();
 }
 
 Raster::~Raster() {
+	dataset_->ReleaseMutex();
 	dataset_ = nullptr;
 }
 
 int Raster::GetRasterXSize() const {
-	return dataset_->GetRasterXSize();
+	return dataset_->get()->GetRasterXSize();
 }
 
 int Raster::GetRasterYSize() const {
-	return dataset_->GetRasterYSize();
+	return dataset_->get()->GetRasterYSize();
 }
 
 int Raster::GetRasterCount() const {
-	return dataset_->GetRasterCount();
+	return dataset_->get()->GetRasterCount();
 }
 
 int32_t Raster::GetSrid() const {
 
 	int32_t srid = 0; // SRID_UNKNOWN
 
-	const char *proj_def = dataset_->GetProjectionRef();
+	const char *proj_def = dataset_->get()->GetProjectionRef();
 	if (proj_def) {
 		OGRSpatialReference spatial_ref;
 		spatial_ref.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
@@ -58,8 +61,8 @@ static Point2D rasterToWorldVertex(double matrix[], int32_t col, int32_t row) {
 }
 
 BBox2D Raster::GetBoundingBox() const {
-	auto cols = dataset_->GetRasterXSize();
-	auto rows = dataset_->GetRasterYSize();
+	auto cols = dataset_->get()->GetRasterXSize();
+	auto rows = dataset_->get()->GetRasterYSize();
 
 	double gt[6] = {0};
 	GetGeoTransform(gt);
@@ -75,8 +78,8 @@ BBox2D Raster::GetBoundingBox() const {
 }
 
 Boundary2D Raster::GetGeometry() const {
-	auto cols = dataset_->GetRasterXSize();
-	auto rows = dataset_->GetRasterYSize();
+	auto cols = dataset_->get()->GetRasterXSize();
+	auto rows = dataset_->get()->GetRasterYSize();
 
 	double gt[6] = {0};
 	GetGeoTransform(gt);
@@ -93,7 +96,7 @@ Boundary2D Raster::GetGeometry() const {
 
 bool Raster::GetGeoTransform(double *matrix) const {
 
-	if (dataset_->GetGeoTransform(matrix) != CE_None) {
+	if (dataset_->get()->GetGeoTransform(matrix) != CE_None) {
 		// Using default geotransform matrix (0, 1, 0, 0, 0, -1)
 		matrix[0] = 0;
 		matrix[1] = 1;
@@ -169,7 +172,7 @@ bool Raster::WorldToRasterCoord(RasterCoord &coord, double inv_matrix[], double 
 
 bool Raster::GetValue(double &value, int32_t band_num, int32_t col, int32_t row) const {
 
-	GDALRasterBand *raster_band = dataset_->GetRasterBand(band_num);
+	GDALRasterBand *raster_band = dataset_->get()->GetRasterBand(band_num);
 	double pixel_value = raster_band->GetNoDataValue();
 
 	if (raster_band->RasterIO(GF_Read, col, row, 1, 1, &pixel_value, 1, 1, GDT_Float64, 0, 0) == CE_None) {
@@ -179,7 +182,8 @@ bool Raster::GetValue(double &value, int32_t band_num, int32_t col, int32_t row)
 	return false;
 }
 
-GDALDataset *Raster::BuildVRT(const std::vector<GDALDataset *> &datasets, const std::vector<std::string> &options) {
+GDALThreadSafeDataset *Raster::BuildVRT(const std::vector<GDALThreadSafeDataset *> &datasets,
+                                        const std::vector<std::string> &options) {
 
 	char **papszArgv = nullptr;
 
@@ -192,20 +196,26 @@ GDALDataset *Raster::BuildVRT(const std::vector<GDALDataset *> &datasets, const 
 	GDALBuildVRTOptions *psOptions = GDALBuildVRTOptionsNew(papszArgv, nullptr);
 	CSLDestroy(papszArgv);
 
+	std::vector<GDALDataset *> datasets_ptrs;
+	for (auto &dataset : datasets) {
+		datasets_ptrs.push_back(dataset->get());
+	}
+
 	auto result = GDALDatasetUniquePtr(GDALDataset::FromHandle(
-	    GDALBuildVRT(nullptr, datasets.size(), (GDALDatasetH *)&datasets[0], nullptr, psOptions, nullptr)));
+	    GDALBuildVRT(nullptr, datasets.size(), (GDALDatasetH *)&datasets_ptrs[0], nullptr, psOptions, nullptr)));
 
 	GDALBuildVRTOptionsFree(psOptions);
 
 	if (result.get() != nullptr) {
 		result->FlushCache();
+		return new GDALThreadSafeDataset(result.release());
 	}
-	return result.release();
+	return nullptr;
 }
 
-GDALDataset *Raster::Warp(const std::vector<std::string> &options) {
+GDALThreadSafeDataset *Raster::Warp(const std::vector<std::string> &options) {
 
-	GDALDatasetH hDataset = GDALDataset::ToHandle(dataset_);
+	GDALDatasetH hDataset = GDALDataset::ToHandle(dataset_->get());
 
 	auto driver = GetGDALDriverManager()->GetDriverByName("MEM");
 	if (!driver) {
@@ -234,8 +244,9 @@ GDALDataset *Raster::Warp(const std::vector<std::string> &options) {
 
 	if (result.get() != nullptr) {
 		result->FlushCache();
+		return new GDALThreadSafeDataset(result.release());
 	}
-	return result.release();
+	return nullptr;
 }
 
 //! Transformer of Geometries to pixel/line coordinates
@@ -267,9 +278,9 @@ public:
 	}
 };
 
-GDALDataset *Raster::Clip(const geometry_t &geometry, const std::vector<std::string> &options) {
+GDALThreadSafeDataset *Raster::Clip(const geometry_t &geometry, const std::vector<std::string> &options) {
 
-	GDALDatasetH hDataset = GDALDataset::ToHandle(dataset_);
+	GDALDatasetH hDataset = GDALDataset::ToHandle(dataset_->get());
 
 	auto driver = GetGDALDriverManager()->GetDriverByName("MEM");
 	if (!driver) {
@@ -291,7 +302,7 @@ GDALDataset *Raster::Clip(const geometry_t &geometry, const std::vector<std::str
 
 		OGRSpatialReference srs;
 		srs.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
-		const char *proj_ref = dataset_->GetProjectionRef();
+		const char *proj_ref = dataset_->get()->GetProjectionRef();
 		if (proj_ref) {
 			srs.importFromWkt(&proj_ref, nullptr);
 		}
@@ -351,12 +362,13 @@ GDALDataset *Raster::Clip(const geometry_t &geometry, const std::vector<std::str
 
 	if (result.get() != nullptr) {
 		result->FlushCache();
+		return new GDALThreadSafeDataset(result.release());
 	}
-	return result.release();
+	return nullptr;
 }
 
-std::vector<GDALDataset *> Raster::Split(int32_t tile_size_x, int32_t tile_size_y, int32_t overlap_x,
-                                         int32_t overlap_y) {
+std::vector<GDALThreadSafeDataset *> Raster::Split(int32_t tile_size_x, int32_t tile_size_y, int32_t overlap_x,
+                                                   int32_t overlap_y) {
 
 	auto driver = GetGDALDriverManager()->GetDriverByName("MEM");
 	if (!driver) {
@@ -371,9 +383,10 @@ std::vector<GDALDataset *> Raster::Split(int32_t tile_size_x, int32_t tile_size_
 		throw InvalidInputException("Overlap values must be non-negative");
 	}
 
-	int32_t cols = dataset_->GetRasterXSize();
-	int32_t rows = dataset_->GetRasterYSize();
-	int32_t band_count = dataset_->GetRasterCount();
+	GDALDataset *dataset = dataset_->get();
+	int32_t cols = dataset->GetRasterXSize();
+	int32_t rows = dataset->GetRasterYSize();
+	int32_t band_count = dataset->GetRasterCount();
 
 	if (tile_size_x + 2 * overlap_x > cols || tile_size_y + 2 * overlap_y > rows) {
 		throw InvalidInputException("Tile size with overlap must not exceed raster dimensions");
@@ -385,9 +398,9 @@ std::vector<GDALDataset *> Raster::Split(int32_t tile_size_x, int32_t tile_size_
 
 	CPLErrorReset();
 
-	GDALDataType data_type = dataset_->GetRasterBand(1)->GetRasterDataType();
+	GDALDataType data_type = dataset->GetRasterBand(1)->GetRasterDataType();
 	double gt[6] = {0, 1, 0, 0, 0, -1};
-	dataset_->GetGeoTransform(gt);
+	dataset->GetGeoTransform(gt);
 
 	std::vector<GDALDatasetUniquePtr> tiles;
 
@@ -410,11 +423,11 @@ std::vector<GDALDataset *> Raster::Split(int32_t tile_size_x, int32_t tile_size_
 			double gt_tile[6] = {pos.x, gt[1], gt[2], pos.y, gt[4], gt[5]};
 
 			tile->SetGeoTransform(gt_tile);
-			tile->SetProjection(dataset_->GetProjectionRef());
-			tile->SetMetadata(dataset_->GetMetadata());
+			tile->SetProjection(dataset->GetProjectionRef());
+			tile->SetMetadata(dataset->GetMetadata());
 
 			for (int b = 1; b <= band_count; ++b) {
-				GDALRasterBand *source_band = dataset_->GetRasterBand(b);
+				GDALRasterBand *source_band = dataset->GetRasterBand(b);
 				GDALRasterBand *target_band = tile->GetRasterBand(b);
 				std::vector<uint8_t> buffer(x_size * y_size * GDALGetDataTypeSizeBytes(data_type));
 
@@ -435,11 +448,11 @@ std::vector<GDALDataset *> Raster::Split(int32_t tile_size_x, int32_t tile_size_
 		}
 	}
 
-	std::vector<GDALDataset *> result;
+	std::vector<GDALThreadSafeDataset *> result;
 	result.reserve(tiles.size());
 
 	for (auto &tile : tiles) {
-		result.push_back(tile.release());
+		result.push_back(new GDALThreadSafeDataset(tile.release()));
 	}
 	tiles.clear();
 

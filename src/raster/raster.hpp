@@ -5,25 +5,25 @@
 #include "spatial_r/spatial_types.hpp"
 #include "spatial/geometry/geometry_type.hpp"
 
-class GDALDataset;
-
 namespace duckdb {
+
+class GDALThreadSafeDataset;
 
 //! A wrapper of a GDALDataset with useful methods to manage raster data.
 //! Does not take ownership of the pointer.
 class Raster {
 public:
 	//! Constructor
-	Raster(GDALDataset *dataset);
+	Raster(GDALThreadSafeDataset *dataset);
 	//! Destructor
 	~Raster();
 
 	//! Returns the pointer to the dataset managed
-	GDALDataset *operator->() const noexcept {
+	inline GDALThreadSafeDataset *operator->() const noexcept {
 		return dataset_;
 	}
 	//! Returns the pointer to the dataset managed
-	GDALDataset *get() const noexcept {
+	inline GDALThreadSafeDataset *get() const noexcept {
 		return dataset_;
 	}
 
@@ -61,18 +61,19 @@ public:
 	bool GetValue(double &value, int32_t band_num, int32_t col, int32_t row) const;
 
 	//! Builds a VRT from a list of Rasters
-	static GDALDataset *BuildVRT(const std::vector<GDALDataset *> &datasets,
-	                             const std::vector<std::string> &options = std::vector<std::string>());
+	static GDALThreadSafeDataset *BuildVRT(const std::vector<GDALThreadSafeDataset *> &datasets,
+	                                       const std::vector<std::string> &options = std::vector<std::string>());
 
 	//! Performs mosaicing, reprojection and/or warping on a raster
-	GDALDataset *Warp(const std::vector<std::string> &options = std::vector<std::string>());
+	GDALThreadSafeDataset *Warp(const std::vector<std::string> &options = std::vector<std::string>());
 
 	//! Returns a raster that is clipped by the input geometry
-	GDALDataset *Clip(const geometry_t &geometry, const std::vector<std::string> &options = std::vector<std::string>());
+	GDALThreadSafeDataset *Clip(const geometry_t &geometry,
+	                            const std::vector<std::string> &options = std::vector<std::string>());
 
 	//! Splits a raster into tiles of the given size, with optional overlap
-	std::vector<GDALDataset *> Split(int32_t tile_size_x, int32_t tile_size_y, int32_t overlap_x = 0,
-	                                 int32_t overlap_y = 0);
+	std::vector<GDALThreadSafeDataset *> Split(int32_t tile_size_x, int32_t tile_size_y, int32_t overlap_x = 0,
+	                                           int32_t overlap_y = 0);
 
 public:
 	//! Returns the geometric X and Y (longitude and latitude) given a column and row
@@ -85,7 +86,7 @@ public:
 	static std::string GetLastErrorMsg();
 
 private:
-	GDALDataset *dataset_;
+	GDALThreadSafeDataset *dataset_;
 };
 
 } // namespace duckdb

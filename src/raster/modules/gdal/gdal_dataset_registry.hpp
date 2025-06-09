@@ -5,6 +5,8 @@
 
 namespace duckdb {
 
+class GDALThreadSafeDataset;
+
 //! A registry of Rasters (GDALDatasets) where items are released.
 //! This takes ownership of items registered.
 class GDALDatasetRegistry {
@@ -15,10 +17,10 @@ public:
 	~GDALDatasetRegistry();
 
 	//! Register a GDALDataset
-	void RegisterDataset(GDALDataset *dataset);
+	void RegisterDataset(GDALThreadSafeDataset *dataset);
 
 private:
-	std::vector<GDALDatasetUniquePtr> datasets_;
+	std::vector<GDALThreadSafeDataset *> datasets_;
 	std::mutex lock_;
 };
 

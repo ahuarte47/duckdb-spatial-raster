@@ -13,6 +13,7 @@
 // GDAL
 #include "gdal_priv.h"
 #include "modules/gdal/gdal_context_state.hpp"
+#include "modules/gdal/gdal_dataset_ts.hpp"
 
 namespace duckdb {
 
@@ -27,7 +28,7 @@ struct RT_Srid {
 	static void GetSrid(DataChunk &args, ExpressionState &state, Vector &result) {
 
 		UnaryExecutor::Execute<uintptr_t, int32_t>(args.data[0], result, args.size(), [&](uintptr_t input) {
-			Raster raster(reinterpret_cast<GDALDataset *>(input));
+			Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 			return raster.GetSrid();
 		});
 	}
@@ -72,7 +73,7 @@ struct RT_Geometry {
 	static void GetGeometry(DataChunk &args, ExpressionState &state, Vector &result) {
 
 		UnaryExecutor::Execute<uintptr_t, string_t>(args.data[0], result, args.size(), [&](uintptr_t input) {
-			Raster raster(reinterpret_cast<GDALDataset *>(input));
+			Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 			Boundary2D boundary = raster.GetGeometry();
 
 			// We can create the geometry polygon directly on the stack.
@@ -100,7 +101,7 @@ struct RT_Geometry {
 	static void GetBBox(DataChunk &args, ExpressionState &state, Vector &result) {
 
 		UnaryExecutor::Execute<uintptr_t, string_t>(args.data[0], result, args.size(), [&](uintptr_t input) {
-			Raster raster(reinterpret_cast<GDALDataset *>(input));
+			Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 			BBox2D bbox = raster.GetBoundingBox();
 
 			// We can create the geometry polygon directly on the stack.
@@ -195,7 +196,7 @@ struct RT_Properties {
 	static void GetWidth(DataChunk &args, ExpressionState &state, Vector &result) {
 
 		UnaryExecutor::Execute<uintptr_t, int32_t>(args.data[0], result, args.size(), [&](uintptr_t input) {
-			Raster raster(reinterpret_cast<GDALDataset *>(input));
+			Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 			return raster.GetRasterXSize();
 		});
 	}
@@ -203,7 +204,7 @@ struct RT_Properties {
 	static void GetHeight(DataChunk &args, ExpressionState &state, Vector &result) {
 
 		UnaryExecutor::Execute<uintptr_t, int32_t>(args.data[0], result, args.size(), [&](uintptr_t input) {
-			Raster raster(reinterpret_cast<GDALDataset *>(input));
+			Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 			return raster.GetRasterYSize();
 		});
 	}
@@ -211,7 +212,7 @@ struct RT_Properties {
 	static void GetNumBands(DataChunk &args, ExpressionState &state, Vector &result) {
 
 		UnaryExecutor::Execute<uintptr_t, int32_t>(args.data[0], result, args.size(), [&](uintptr_t input) {
-			Raster raster(reinterpret_cast<GDALDataset *>(input));
+			Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 			return raster.GetRasterCount();
 		});
 	}
@@ -219,7 +220,7 @@ struct RT_Properties {
 	static void GetTransformItem(DataChunk &args, ExpressionState &state, Vector &result, int32_t gt_index) {
 
 		UnaryExecutor::Execute<uintptr_t, double>(args.data[0], result, args.size(), [&](uintptr_t input) {
-			Raster raster(reinterpret_cast<GDALDataset *>(input));
+			Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 			double gt[6] = {0};
 			raster.GetGeoTransform(gt);
 			return gt[gt_index];
@@ -247,7 +248,7 @@ struct RT_Properties {
 	static void GetPixelWidth(DataChunk &args, ExpressionState &state, Vector &result) {
 
 		UnaryExecutor::Execute<uintptr_t, double>(args.data[0], result, args.size(), [&](uintptr_t input) {
-			Raster raster(reinterpret_cast<GDALDataset *>(input));
+			Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 			double gt[6] = {0};
 			raster.GetGeoTransform(gt);
 			return sqrt(gt[1] * gt[1] + gt[4] * gt[4]);
@@ -257,7 +258,7 @@ struct RT_Properties {
 	static void GetPixelHeight(DataChunk &args, ExpressionState &state, Vector &result) {
 
 		UnaryExecutor::Execute<uintptr_t, double>(args.data[0], result, args.size(), [&](uintptr_t input) {
-			Raster raster(reinterpret_cast<GDALDataset *>(input));
+			Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 			double gt[6] = {0};
 			raster.GetGeoTransform(gt);
 			return sqrt(gt[5] * gt[5] + gt[2] * gt[2]);
@@ -583,7 +584,7 @@ struct RT_RasterToWorldCoord {
 			    auto input = p1.val;
 			    auto col = p2.val;
 			    auto row = p3.val;
-			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+			    Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 
 			    Point2D coord(0, 0);
 			    if (!raster.RasterToWorldCoord(coord, col, row)) {
@@ -599,7 +600,7 @@ struct RT_RasterToWorldCoord {
 		TernaryExecutor::Execute<uintptr_t, int32_t, int32_t, double>(
 		    args.data[0], args.data[1], args.data[2], result, args.size(),
 		    [&](uintptr_t input, int32_t col, int32_t row) {
-			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+			    Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 
 			    Point2D coord(0, 0);
 			    if (!raster.RasterToWorldCoord(coord, col, row)) {
@@ -615,7 +616,7 @@ struct RT_RasterToWorldCoord {
 		TernaryExecutor::Execute<uintptr_t, int32_t, int32_t, double>(
 		    args.data[0], args.data[1], args.data[2], result, args.size(),
 		    [&](uintptr_t input, int32_t col, int32_t row) {
-			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+			    Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 
 			    Point2D coord(0, 0);
 			    if (!raster.RasterToWorldCoord(coord, col, row)) {
@@ -739,7 +740,7 @@ struct RT_WorldToRasterCoord {
 			    auto input = p1.val;
 			    auto x = p2.val;
 			    auto y = p3.val;
-			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+			    Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 
 			    RasterCoord coord(0, 0);
 			    if (!raster.WorldToRasterCoord(coord, x, y)) {
@@ -755,7 +756,7 @@ struct RT_WorldToRasterCoord {
 		TernaryExecutor::Execute<uintptr_t, double_t, double_t, int32_t>(
 		    args.data[0], args.data[1], args.data[2], result, args.size(),
 		    [&](uintptr_t input, double_t x, double_t y) {
-			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+			    Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 
 			    RasterCoord coord(0, 0);
 			    if (!raster.WorldToRasterCoord(coord, x, y)) {
@@ -771,7 +772,7 @@ struct RT_WorldToRasterCoord {
 		TernaryExecutor::Execute<uintptr_t, double_t, double_t, int32_t>(
 		    args.data[0], args.data[1], args.data[2], result, args.size(),
 		    [&](uintptr_t input, double_t x, double_t y) {
-			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+			    Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 
 			    RasterCoord coord(0, 0);
 			    if (!raster.WorldToRasterCoord(coord, x, y)) {
@@ -897,22 +898,21 @@ struct RT_Value {
 			    auto col = p3.val;
 			    auto row = p4.val;
 
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
-			    auto cols = dataset->GetRasterXSize();
-			    auto rows = dataset->GetRasterYSize();
+			    Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
+			    auto cols = raster.GetRasterXSize();
+			    auto rows = raster.GetRasterYSize();
 
 			    if (band_num < 1) {
 				    throw InvalidInputException("BandNum must be greater than 0");
 			    }
-			    if (dataset->GetRasterCount() < band_num) {
-				    throw InvalidInputException("Dataset only has %d RasterBands", dataset->GetRasterCount());
+			    if (raster.GetRasterCount() < band_num) {
+				    throw InvalidInputException("Dataset only has %d RasterBands", raster.GetRasterCount());
 			    }
 			    if (col < 0 || col >= cols || row < 0 || row >= rows) {
 				    throw InvalidInputException(
 				        "Attempting to get pixel value with out of range raster coordinates: (%d, %d)", col, row);
 			    }
 
-			    Raster raster(dataset);
 			    double value;
 			    if (raster.GetValue(value, band_num, col, row)) {
 				    return value;
@@ -982,7 +982,7 @@ struct RT_RasterWarp {
 			    auto input = p1.val;
 			    auto offlen = p2_offlen.val;
 
-			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+			    Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 
 			    if (raster.GetRasterCount() == 0) {
 				    throw InvalidInputException("Input Raster has no RasterBands");
@@ -996,7 +996,7 @@ struct RT_RasterWarp {
 				    options.emplace_back(option);
 			    }
 
-			    GDALDataset *result = raster.Warp(options);
+			    GDALThreadSafeDataset *result = raster.Warp(options);
 
 			    if (result == nullptr) {
 				    auto error = Raster::GetLastErrorMsg();
@@ -1074,13 +1074,13 @@ struct RT_RasterClip {
 			    auto input = p1.val;
 			    auto geometry = p2.val;
 
-			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+			    Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 
 			    if (raster.GetRasterCount() == 0) {
 				    throw InvalidInputException("Input Raster has no RasterBands");
 			    }
 
-			    GDALDataset *result = raster.Clip(geometry);
+			    GDALThreadSafeDataset *result = raster.Clip(geometry);
 
 			    if (result == nullptr) {
 				    auto error = Raster::GetLastErrorMsg();
@@ -1111,7 +1111,7 @@ struct RT_RasterClip {
 			    auto geometry = p2.val;
 			    auto offlen = p3_offlen.val;
 
-			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+			    Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 
 			    if (raster.GetRasterCount() == 0) {
 				    throw InvalidInputException("Input Raster has no RasterBands");
@@ -1125,7 +1125,7 @@ struct RT_RasterClip {
 				    options.emplace_back(option);
 			    }
 
-			    GDALDataset *result = raster.Clip(geometry, options);
+			    GDALThreadSafeDataset *result = raster.Clip(geometry, options);
 
 			    if (result == nullptr) {
 				    auto error = Raster::GetLastErrorMsg();
@@ -1233,7 +1233,7 @@ struct RT_RasterSplit {
 			    auto tile_size_x = p2.val;
 			    auto tile_size_y = p3.val;
 
-			    Raster raster(reinterpret_cast<GDALDataset *>(input));
+			    Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 
 			    if (raster.GetRasterCount() == 0) {
 				    throw InvalidInputException("Input Raster has no RasterBands");

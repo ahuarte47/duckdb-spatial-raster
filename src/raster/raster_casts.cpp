@@ -40,7 +40,7 @@ struct RasterCasts {
 	static bool RasterToGeometryCast(Vector &source, Vector &result, idx_t count, CastParameters &parameters) {
 
 		UnaryExecutor::Execute<uintptr_t, string_t>(source, result, count, [&](uintptr_t &input) {
-			Raster raster(reinterpret_cast<GDALDataset *>(input));
+			Raster raster(reinterpret_cast<GDALThreadSafeDataset *>(input));
 			Boundary2D boundary = raster.GetGeometry();
 
 			// We can create the geometry polygon directly on the stack.

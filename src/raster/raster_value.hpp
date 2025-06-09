@@ -2,20 +2,20 @@
 
 #include "duckdb/common/types/value.hpp"
 
-class GDALDataset;
-
 namespace duckdb {
+
+class GDALThreadSafeDataset;
 
 //! This Value object holds a Raster (GDALDataset) instance
 class RasterValue : public Value {
 public:
 	//! Returns the pointer to the dataset
-	GDALDataset *operator->() const;
+	GDALThreadSafeDataset *operator->() const;
 	//! Returns the pointer to the dataset
-	GDALDataset *get() const;
+	GDALThreadSafeDataset *get() const;
 
 	//! Create a RASTER value
-	static Value CreateValue(GDALDataset *dataset);
+	static Value CreateValue(GDALThreadSafeDataset *dataset);
 };
 
 } // namespace duckdb

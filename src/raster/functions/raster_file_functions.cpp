@@ -11,6 +11,7 @@
 #include "gdal_priv.h"
 #include "modules/gdal/gdal_dataset_factory.hpp"
 #include "modules/gdal/gdal_context_state.hpp"
+#include "modules/gdal/gdal_dataset_ts.hpp"
 
 namespace duckdb {
 
@@ -31,7 +32,7 @@ struct RT_File {
 		UnaryExecutor::Execute<string_t, uintptr_t>(args.data[0], result, args.size(), [&](string_t input) {
 			auto raw_file_name = input.GetString();
 
-			GDALDataset *dataset = GDALDatasetFactory::FromFile(raw_file_name);
+			GDALThreadSafeDataset *dataset = GDALDatasetFactory::FromFile(raw_file_name);
 			if (dataset == nullptr) {
 				auto error = Raster::GetLastErrorMsg();
 				throw IOException("Could not open file: " + raw_file_name + " (" + error + ")");
@@ -48,7 +49,7 @@ struct RT_File {
 		TernaryExecutor::Execute<uintptr_t, string_t, string_t, bool>(
 		    args.data[0], args.data[1], args.data[2], result, args.size(),
 		    [&](uintptr_t input, string_t file_name, string_t driver_name) {
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    GDALThreadSafeDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(input);
 			    auto raw_file_name = file_name.GetString();
 
 			    auto gdal_driver_name = driver_name.GetString();
@@ -89,7 +90,7 @@ struct RT_File {
 			    auto driver_name = p3.val;
 			    auto offlen = p4_offlen.val;
 
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    GDALThreadSafeDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(input);
 			    auto raw_file_name = file_name.GetString();
 
 			    auto gdal_driver_name = driver_name.GetString();
@@ -202,7 +203,7 @@ struct RT_File {
 struct RT_Blob {
 
 	static void RasterFromBlob_00(DataChunk &args, ExpressionState &state, Vector &result) {
-		D_ASSERT(args.data.size() == 2);
+		D_ASSERT(args.data.size() == 1);
 
 		auto &context = state.GetContext();
 		auto &ctx_state = GDALClientContextState::GetOrCreate(context);
@@ -213,7 +214,7 @@ struct RT_Blob {
 
 			std::vector<std::string> allowed_drivers = {"GTiff"};
 
-			GDALDataset *dataset = GDALDatasetFactory::FromBlob(blob_ptr, blob_size, allowed_drivers);
+			GDALThreadSafeDataset *dataset = GDALDatasetFactory::FromBlob(blob_ptr, blob_size, allowed_drivers);
 			if (dataset == nullptr) {
 				auto error = Raster::GetLastErrorMsg();
 				throw IOException("Could not open file from a Blob (" + error + ")");
@@ -242,7 +243,7 @@ struct RT_Blob {
 
 			    std::vector<std::string> allowed_drivers = {gdal_driver_name};
 
-			    GDALDataset *dataset = GDALDatasetFactory::FromBlob(blob_ptr, blob_size, allowed_drivers);
+			    GDALThreadSafeDataset *dataset = GDALDatasetFactory::FromBlob(blob_ptr, blob_size, allowed_drivers);
 			    if (dataset == nullptr) {
 				    auto error = Raster::GetLastErrorMsg();
 				    throw IOException("Could not open file from a Blob (" + error + ")");
@@ -285,7 +286,7 @@ struct RT_Blob {
 				    throw InvalidInputException("Driver name[s] must be specified");
 			    }
 
-			    GDALDataset *dataset = GDALDatasetFactory::FromBlob(blob_ptr, blob_size, allowed_drivers);
+			    GDALThreadSafeDataset *dataset = GDALDatasetFactory::FromBlob(blob_ptr, blob_size, allowed_drivers);
 			    if (dataset == nullptr) {
 				    auto error = Raster::GetLastErrorMsg();
 				    throw IOException("Could not open file from a Blob (" + error + ")");
@@ -300,7 +301,7 @@ struct RT_Blob {
 		D_ASSERT(args.data.size() == 1);
 
 		UnaryExecutor::Execute<uintptr_t, string_t>(args.data[0], result, args.size(), [&](uintptr_t input) {
-			GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			GDALThreadSafeDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(input);
 
 			uint64_t blob_size = 0;
 			const char *blob_ptr = GDALDatasetFactory::WriteBlob(dataset, "GTiff", blob_size);
@@ -322,7 +323,7 @@ struct RT_Blob {
 
 		BinaryExecutor::Execute<uintptr_t, string_t, string_t>(
 		    args.data[0], args.data[1], result, args.size(), [&](uintptr_t input, string_t driver_name) {
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    GDALThreadSafeDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(input);
 
 			    auto gdal_driver_name = driver_name.GetString();
 			    if (gdal_driver_name.empty()) {
@@ -363,7 +364,7 @@ struct RT_Blob {
 			    auto driver_name = p2.val;
 			    auto offlen = p3_offlen.val;
 
-			    GDALDataset *dataset = reinterpret_cast<GDALDataset *>(input);
+			    GDALThreadSafeDataset *dataset = reinterpret_cast<GDALThreadSafeDataset *>(input);
 
 			    auto gdal_driver_name = driver_name.GetString();
 			    if (gdal_driver_name.empty()) {

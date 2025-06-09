@@ -16,6 +16,7 @@
 #include "gdal_priv.h"
 #include "modules/gdal/gdal_dataset_factory.hpp"
 #include "modules/gdal/gdal_context_state.hpp"
+#include "modules/gdal/gdal_dataset_ts.hpp"
 
 namespace duckdb {
 
@@ -224,13 +225,15 @@ struct RT_Read {
 			throw IOException("Could not open file: " + raw_file_name + " (" + error + ")");
 		}
 
+		GDALThreadSafeDataset *dataset_ts = new GDALThreadSafeDataset(dataset);
+
 		// Now we can bind the dataset
-		ctx_state.GetDatasetRegistry().RegisterDataset(dataset);
+		ctx_state.GetDatasetRegistry().RegisterDataset(dataset_ts);
 		bind_data.loaded = true;
 
 		// And fill the output
 		output.data[0].SetValue(0, Value::CreateValue(raw_file_name));
-		output.data[1].SetValue(0, RasterValue::CreateValue(dataset));
+		output.data[1].SetValue(0, RasterValue::CreateValue(dataset_ts));
 		output.SetCardinality(1);
 	};
 
@@ -429,7 +432,8 @@ struct RT_Read_Meta {
 				continue;
 			}
 
-			Raster raster(dataset.get());
+			GDALThreadSafeDataset dataset_ts(dataset.get());
+			Raster raster(&dataset_ts);
 			double gt[6] = {0};
 			raster.GetGeoTransform(gt);
 
@@ -446,6 +450,8 @@ struct RT_Read_Meta {
 			output.data[10].SetValue(out_idx, gt[4]);
 			output.data[11].SetValue(out_idx, raster.GetSrid());
 			output.data[12].SetValue(out_idx, raster.GetRasterCount());
+
+			dataset.release();
 		}
 		output.SetCardinality(out_size);
 	}
@@ -635,7 +641,9 @@ struct RT_Write {
 
 				if (type == RasterTypes::RASTER()) {
 					auto value = input.GetValue(col_idx, row_idx);
-					GDALDataset *dataset = reinterpret_cast<GDALDataset *>(value.GetValueUnsafe<uint64_t>());
+
+					GDALThreadSafeDataset *dataset =
+					    reinterpret_cast<GDALThreadSafeDataset *>(value.GetValueUnsafe<uint64_t>());
 
 					auto raw_file_name = bind_data.file_path;
 					auto driver_name = bind_data.driver_name;
