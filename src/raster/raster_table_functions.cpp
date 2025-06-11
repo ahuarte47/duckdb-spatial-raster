@@ -124,7 +124,7 @@ struct RT_Drivers {
 	// static constexpr DocTag DOC_TAGS[] = {{"ext", "spatial_raster"}};
 
 	static constexpr auto DESCRIPTION = R"(
-		Returns the list of supported GDAL RASTER drivers and file formats
+		Returns the list of supported GDAL RASTER drivers and file formats.
 
 		Note that far from all of these drivers have been tested properly.
 		Some may require additional options to be passed to work as expected.
