@@ -11,11 +11,18 @@ project(${TARGET_NAME})
 add_definitions(-DDUCKDB_MAJOR_VERSION=${DUCKDB_MAJOR_VERSION})
 add_definitions(-DDUCKDB_MINOR_VERSION=${DUCKDB_MINOR_VERSION})
 add_definitions(-DDUCKDB_PATCH_VERSION=${DUCKDB_PATCH_VERSION})
+add_definitions(-DDUCKDB_SPATIAL_EXTENSION=1)
 
 # Options
 
 # Enable network functionality (OpenSSL and GDAL's CURL based fs/drivers)
 option(SPATIAL_USE_NETWORK "Enable network functionality" ON)
+
+if (VCPKG_TARGET_IS_EMSCRIPTEN)
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+  set(EMSCRIPTEN ON)
+endif()
+
 # Enable GEOS support
 option(SPATIAL_USE_GEOS "Enable GEOS support" ON)
 

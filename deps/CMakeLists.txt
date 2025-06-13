@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(dependecies-build)
+project(dependencies-build)
 
 # Install and build dependencies locally
 include(ExternalProject)
@@ -11,7 +11,7 @@ if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
 endif()
 
-if(${VCPKG_TARGET_TRIPLET} STREQUAL "wasm32-emscripten")
+if("${VCPKG_TARGET_TRIPLET}" STREQUAL "wasm32-emscripten")
     set(EMSCRIPTEN ON)
 endif()
 
@@ -107,9 +107,7 @@ ExternalProject_Add(
     DEPENDS ${GDAL_DEPENDENCIES}
     URL ${CMAKE_CURRENT_SOURCE_DIR}/vendor/gdal385.zip
     CONFIGURE_HANDLED_BY_BUILD TRUE
-    PATCH_COMMAND
-        patch -p1 -i "${CMAKE_CURRENT_LIST_DIR}/patches/remove_filehandler${PATCH_NAME_ENDING}.patch" &&
-        patch -p1 -i "${CMAKE_CURRENT_LIST_DIR}/patches/msyspatch${PATCH_NAME_ENDING}.patch"
+    PATCH_COMMAND patch -p1 -i "${CMAKE_CURRENT_LIST_DIR}/patches/remove_filehandler${PATCH_NAME_ENDING}.patch" && patch -p1 -i "${CMAKE_CURRENT_LIST_DIR}/patches/msyspatch${PATCH_NAME_ENDING}.patch" && patch -p1 -i "${CMAKE_CURRENT_LIST_DIR}/patches/gdal.patch"
     CMAKE_ARGS
     # CMake options
     -DCMAKE_CXX_COMPILER='${CMAKE_CXX_COMPILER}'
@@ -144,6 +142,10 @@ ExternalProject_Add(
     -DGDAL_USE_EXTERNAL_LIBS=OFF
     -DGDAL_USE_INTERNAL_LIBS=ON
 
+    # These are required
+    #-DGDAL_USE_ZLIB=ON
+    #-DGDAL_USE_ZLIB_INTERNAL=OFF # Dont use zlib bundled
+
     # Supported drivers
     -DGDAL_USE_GEOS=${SPATIAL_USE_GEOS}
     -DGDAL_USE_SQLITE3=ON
@@ -168,6 +170,9 @@ ExternalProject_Add(
     -DGDAL_USE_LIBKML=OFF
 
     # Build these explicitly
+    #-DGDAL_ENABLE_DRIVER_RAW=ON
+    #-DGDAL_ENABLE_DRIVER_AAIGRID=ON
+    #-DGDAL_ENABLE_DRIVER_JP2OPENJPEG=ON
 
     # Remove bindings
     -DBUILD_PYTHON_BINDINGS=OFF

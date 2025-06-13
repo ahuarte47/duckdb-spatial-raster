@@ -51,7 +51,7 @@ struct RasterCasts {
 				*buffer_p++ = point.y;
 			}
 			sgl::geometry ring(sgl::geometry_type::LINESTRING, false, false);
-			ring.set_vertex_data(reinterpret_cast<const char *>(buffer), 5);
+			ring.set_vertex_array(buffer, 5);
 			sgl::geometry polygon(sgl::geometry_type::POLYGON, false, false);
 			polygon.append_part(&ring);
 

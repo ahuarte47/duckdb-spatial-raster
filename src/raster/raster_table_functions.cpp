@@ -6,7 +6,7 @@
 // DuckDB
 #include "duckdb/main/database.hpp"
 #include "duckdb/main/extension_util.hpp"
-#include "duckdb/common/multi_file_reader.hpp"
+#include "duckdb/common/multi_file/multi_file_reader.hpp"
 #include "duckdb/parser/expression/function_expression.hpp"
 #include "duckdb/parser/parsed_data/create_copy_function_info.hpp"
 #include "duckdb/parser/tableref/table_function_ref.hpp"
@@ -143,7 +143,9 @@ struct RT_Drivers {
 		const TableFunction func("RT_Drivers", {}, Execute, Bind, Init);
 		ExtensionUtil::RegisterFunction(db, func);
 
-		FunctionBuilder::AddTableFunctionDocs(db, "RT_Drivers", DESCRIPTION, EXAMPLE, {{"ext", "spatial_raster"}});
+		InsertionOrderPreservingMap<string> tags;
+		tags.insert("ext", "spatial_raster");
+		FunctionBuilder::AddTableFunctionDocs(db, "RT_Drivers", DESCRIPTION, EXAMPLE, tags);
 	}
 };
 
@@ -330,7 +332,9 @@ struct RT_Read {
 		func.named_parameters["sibling_files"] = LogicalType::LIST(LogicalType::VARCHAR);
 		ExtensionUtil::RegisterFunction(db, func);
 
-		FunctionBuilder::AddTableFunctionDocs(db, "RT_Read", DOCUMENTATION, EXAMPLE, {{"ext", "spatial_raster"}});
+		InsertionOrderPreservingMap<string> tags;
+		tags.insert("ext", "spatial_raster");
+		FunctionBuilder::AddTableFunctionDocs(db, "RT_Read", DOCUMENTATION, EXAMPLE, tags);
 
 		// Replacement scan
 		auto &config = DBConfig::GetConfig(db);
@@ -349,9 +353,9 @@ struct RT_Read_Meta {
 	//------------------------------------------------------------------------------------------------------------------
 
 	struct BindData final : TableFunctionData {
-		vector<string> file_names;
+		vector<OpenFileInfo> files;
 
-		explicit BindData(vector<string> file_names_p) : file_names(std::move(file_names_p)) {
+		explicit BindData(vector<OpenFileInfo> files_p) : files(std::move(files_p)) {
 		}
 	};
 
@@ -416,15 +420,15 @@ struct RT_Read_Meta {
 		auto &bind_data = input.bind_data->Cast<BindData>();
 		auto &state = input.global_state->Cast<State>();
 
-		auto out_size = MinValue<idx_t>(STANDARD_VECTOR_SIZE, bind_data.file_names.size() - state.current_idx);
+		auto out_size = MinValue<idx_t>(STANDARD_VECTOR_SIZE, bind_data.files.size() - state.current_idx);
 
 		for (idx_t out_idx = 0; out_idx < out_size; out_idx++, state.current_idx++) {
-			auto file_name = bind_data.file_names[state.current_idx];
+			auto file = bind_data.files[state.current_idx];
 
 			GDALDatasetUniquePtr dataset;
 			try {
 				dataset =
-				    GDALDatasetUniquePtr(GDALDataset::Open(file_name.c_str(), GDAL_OF_RASTER | GDAL_OF_VERBOSE_ERROR));
+				    GDALDatasetUniquePtr(GDALDataset::Open(file.path.c_str(), GDAL_OF_RASTER | GDAL_OF_VERBOSE_ERROR));
 			} catch (...) {
 				// Just skip anything we cant open
 				out_idx--;
@@ -437,7 +441,7 @@ struct RT_Read_Meta {
 			double gt[6] = {0};
 			raster.GetGeoTransform(gt);
 
-			output.data[0].SetValue(out_idx, file_name);
+			output.data[0].SetValue(out_idx, file.path);
 			output.data[1].SetValue(out_idx, dataset->GetDriver()->GetDescription());
 			output.data[2].SetValue(out_idx, dataset->GetDriver()->GetMetadataItem(GDAL_DMD_LONGNAME));
 			output.data[3].SetValue(out_idx, gt[0]);
@@ -508,7 +512,9 @@ struct RT_Read_Meta {
 		const TableFunction func("RT_Read_Meta", {LogicalType::VARCHAR}, Execute, Bind, Init);
 		ExtensionUtil::RegisterFunction(db, MultiFileReader::CreateFunctionSet(func));
 
-		FunctionBuilder::AddTableFunctionDocs(db, "RT_Read_Meta", DOCUMENTATION, EXAMPLE, {{"ext", "spatial_raster"}});
+		InsertionOrderPreservingMap<string> tags;
+		tags.insert("ext", "spatial_raster");
+		FunctionBuilder::AddTableFunctionDocs(db, "RT_Read_Meta", DOCUMENTATION, EXAMPLE, tags);
 	}
 };
 
