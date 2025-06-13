@@ -29,7 +29,6 @@ jobs:
       extension_name: spatial_raster
       duckdb_version: v1.3.0
       ci_tools_version: v1.3.0
-      exclude_archs: linux_amd64_musl
 
   duckdb-latest-deploy:
     name: Deploy extension binaries
@@ -40,5 +39,4 @@ jobs:
       extension_name: spatial_raster
       duckdb_version: v1.3.0
       ci_tools_version: v1.3.0
-      exclude_archs: linux_amd64_musl
       deploy_latest: ${{ startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/v1.3.0' }}

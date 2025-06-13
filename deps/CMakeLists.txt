@@ -143,8 +143,8 @@ ExternalProject_Add(
     -DGDAL_USE_INTERNAL_LIBS=ON
 
     # These are required
-    #-DGDAL_USE_ZLIB=ON
-    #-DGDAL_USE_ZLIB_INTERNAL=OFF # Dont use zlib bundled
+    -DGDAL_USE_ZLIB=ON
+    -DGDAL_USE_ZLIB_INTERNAL=OFF # Dont use zlib bundled
 
     # Supported drivers
     -DGDAL_USE_GEOS=${SPATIAL_USE_GEOS}
