@@ -25,21 +25,20 @@ struct RT_RasterUnion_Agg {
 
 	template <class T, class STATE>
 	static void RasterUnionFunction(STATE &state, T &target, AggregateFinalizeData &finalize_data) {
-		if (!state.is_set) {
+		auto &bind_data = finalize_data.input.bind_data->Cast<RasterAggBindData>();
+
+		if (bind_data.datasets.empty()) {
 			finalize_data.ReturnNull();
 		} else {
-			auto datasets = state.datasets;
-			auto &bind_data = finalize_data.input.bind_data->Cast<RasterAggBindData>();
 			auto &context = bind_data.context;
 			auto &options = bind_data.options;
+			auto &datasets = bind_data.datasets;
 
 			std::vector<std::string> vrt_options;
 			vrt_options.push_back("-separate");
 			vrt_options.insert(vrt_options.end(), options.begin(), options.end());
 
-			GDALThreadSafeDataset *result = Raster::BuildVRT(*datasets, vrt_options);
-			state.Destroy();
-
+			GDALThreadSafeDataset *result = Raster::BuildVRT(datasets, vrt_options);
 			if (result == nullptr) {
 				auto error = Raster::GetLastErrorMsg();
 				throw IOException("Could not make union: (" + error + ")");
@@ -122,20 +121,19 @@ struct RT_RasterMosaic_Agg {
 
 	template <class T, class STATE>
 	static void RasterMosaicFunction(STATE &state, T &target, AggregateFinalizeData &finalize_data) {
-		if (!state.is_set) {
+		auto &bind_data = finalize_data.input.bind_data->Cast<RasterAggBindData>();
+
+		if (bind_data.datasets.empty()) {
 			finalize_data.ReturnNull();
 		} else {
-			auto datasets = state.datasets;
-			auto &bind_data = finalize_data.input.bind_data->Cast<RasterAggBindData>();
 			auto &context = bind_data.context;
 			auto &options = bind_data.options;
+			auto &datasets = bind_data.datasets;
 
 			std::vector<std::string> vrt_options;
 			vrt_options.insert(vrt_options.end(), options.begin(), options.end());
 
-			GDALThreadSafeDataset *result = Raster::BuildVRT(*datasets, vrt_options);
-			state.Destroy();
-
+			GDALThreadSafeDataset *result = Raster::BuildVRT(datasets, vrt_options);
 			if (result == nullptr) {
 				auto error = Raster::GetLastErrorMsg();
 				throw IOException("Could not make mosaic: (" + error + ")");
