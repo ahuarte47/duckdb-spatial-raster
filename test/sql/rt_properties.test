@@ -1,3 +1,6 @@
+# name: test/sql/rt_properties.test
+# group: [sql]
+
 require spatial_raster
 
 query IIIIIIIIIII

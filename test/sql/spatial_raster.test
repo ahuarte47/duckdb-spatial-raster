@@ -1,6 +1,6 @@
 # name: test/sql/spatial_raster.test
 # description: test spatial_raster extension
-# group: [spatial_raster]
+# group: [sql]
 
 # Before we load the extension, this will fail
 statement error

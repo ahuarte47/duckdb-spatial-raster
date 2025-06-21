@@ -1,3 +1,6 @@
+# name: test/sql/rt_srid.test
+# group: [sql]
+
 require spatial_raster
 
 query I

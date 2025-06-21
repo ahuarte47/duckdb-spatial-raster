@@ -1,3 +1,6 @@
+# name: test/sql/rt_raster_split.test
+# group: [sql]
+
 require spatial_raster
 
 query IIII

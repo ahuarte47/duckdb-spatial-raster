@@ -1,3 +1,6 @@
+# name: test/sql/rt_get_band_metadata.test
+# group: [sql]
+
 require spatial_raster
 
 query IIIIIIII

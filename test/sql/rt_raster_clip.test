@@ -1,3 +1,6 @@
+# name: test/sql/rt_raster_clip.test
+# group: [sql]
+
 require spatial_raster
 
 statement ok

@@ -7,4 +7,4 @@ set(EXTENSION_SOURCES
     ${CMAKE_SOURCE_DIR}/../duckdb-spatial/src/spatial/geometry/geometry_serialization.cpp
     ${CMAKE_SOURCE_DIR}/../duckdb-spatial/src/spatial/geometry/wkb_writer.cpp
     ${CMAKE_SOURCE_DIR}/../duckdb-spatial/src/spatial/util/math.cpp
-PARENT_SCOPE)
+    PARENT_SCOPE)
