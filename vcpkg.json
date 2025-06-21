@@ -6,21 +6,45 @@
     "geos",
     "expat",
     {
+      "name": "sqlite3",
+      "features": ["rtree"],
+      "default-features": false
+    },
+    {
+      "name": "proj",
+      "default-features": false,
+      "version>=": "9.1.1"
+    },
+    {
       "name": "curl",
       "platform": "!wasm32 & !ios & !android",
       "features": ["openssl"],
       "default-features": false
+    },
+    {
+      "name": "gdal",
+      "version>=": "3.8.5",
+      "features": [
+        {
+          "name": "network",
+          "platform": "!wasm32 & !ios & !android"
+        },
+        "geos"
+      ]
     }
   ],
   "vcpkg-configuration": {
+    "overlay-ports": [
+      "./vcpkg_ports"
+    ],
     "registries": [
       {
         "kind": "git",
         "repository": "https://github.com/duckdb/vcpkg-duckdb-ports",
-        "baseline": "c8f9d504986e76dbcd4585a34028ff00e251f40f",
+        "baseline": "3c7b96fa186c27eae2226a1b5b292f2b2dd3cf8f",
         "packages": [ "vcpkg-cmake" ]
       }
     ]
   },
-  "builtin-baseline" : "5e5d0e1cd7785623065e77eff011afdeec1a3574"
+  "builtin-baseline" : "ce613c41372b23b1f51333815feb3edd87ef8a8b"
 }
