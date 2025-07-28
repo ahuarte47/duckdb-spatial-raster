@@ -3,42 +3,40 @@
 #
 name: Main Extension Distribution Pipeline
 on:
-  pull_request:
-    branches:
-      - v1.3.2
-    paths-ignore:
-      - '**/README.md'
-      - 'doc/**'
   push:
-    branches:
-      - v1.3.2
-    paths-ignore:
-      - '**/README.md'
-      - 'doc/**'
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ github.ref != 'refs/heads/main' || github.sha }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ github.ref != 'refs/heads/main' && github.sha || '' }}
   cancel-in-progress: true
 
-
 jobs:
-  duckdb-latest-build:
+  duckdb-next-build:
+    name: Build extension binaries
+    uses: duckdb/extension-ci-tools/.github/workflows/_extension_distribution.yml@main
+    if: false   # extension-template is currently not compatible with main
+    with:
+      duckdb_version: main
+      ci_tools_version: main
+      extension_name: spatial_raster
+      vcpkg_commit: ce613c41372b23b1f51333815feb3edd87ef8a8b
+
+  duckdb-stable-build:
     name: Build extension binaries
     uses: duckdb/extension-ci-tools/.github/workflows/_extension_distribution.yml@v1.3.2
     with:
-      extension_name: spatial_raster
       duckdb_version: v1.3.2
       ci_tools_version: v1.3.2
+      extension_name: spatial_raster
       vcpkg_commit: ce613c41372b23b1f51333815feb3edd87ef8a8b
 
-  duckdb-latest-deploy:
-    name: Deploy extension binaries
-    needs: duckdb-latest-build
-    uses: duckdb/extension-ci-tools/.github/workflows/_extension_deploy.yml@v1.3.0
-    secrets: inherit
+  code-quality-check:
+    name: Code Quality Check
+    uses: duckdb/extension-ci-tools/.github/workflows/_extension_code_quality.yml@main
     with:
-      extension_name: spatial_raster
       duckdb_version: v1.3.2
-      ci_tools_version: v1.3.2
-      deploy_latest: ${{ startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/v1.3.2' }}
+      ci_tools_version: main
+      extension_name: spatial_raster
+      format_checks: 'format'
