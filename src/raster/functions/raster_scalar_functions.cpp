@@ -136,7 +136,7 @@ struct RT_Geometry {
 		FunctionBuilder::RegisterScalar(db, "RT_GetGeometry", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
-				variant.SetReturnType(GeoTypes::GEOMETRY());
+				variant.SetReturnType(SpatialTypes::GEOMETRY());
 				variant.SetFunction(GetGeometry);
 			});
 			func.SetDescription(R"(
@@ -162,7 +162,7 @@ struct RT_Geometry {
 		FunctionBuilder::RegisterScalar(db, "RT_GetBBox", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
-				variant.SetReturnType(GeoTypes::GEOMETRY());
+				variant.SetReturnType(SpatialTypes::GEOMETRY());
 				variant.SetFunction(GetBBox);
 			});
 			func.SetDescription(R"(
@@ -633,7 +633,7 @@ struct RT_RasterToWorldCoord {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("col", LogicalType::INTEGER);
 				variant.AddParameter("row", LogicalType::INTEGER);
-				variant.SetReturnType(GeoTypes::POINT_2D());
+				variant.SetReturnType(SpatialTypes::POINT_2D());
 				variant.SetFunction(RasterToWorldCoord);
 			});
 			func.SetDescription(R"(
@@ -1142,13 +1142,13 @@ struct RT_RasterClip {
 		FunctionBuilder::RegisterScalar(db, "RT_RasterClip", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
-				variant.AddParameter("geometry", GeoTypes::GEOMETRY());
+				variant.AddParameter("geometry", SpatialTypes::GEOMETRY());
 				variant.SetReturnType(RasterTypes::RASTER());
 				variant.SetFunction(RasterClip_01);
 			});
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
-				variant.AddParameter("geometry", GeoTypes::GEOMETRY());
+				variant.AddParameter("geometry", SpatialTypes::GEOMETRY());
 				variant.AddParameter("options", LogicalType::LIST(LogicalType::VARCHAR));
 				variant.SetReturnType(RasterTypes::RASTER());
 				variant.SetFunction(RasterClip_02);

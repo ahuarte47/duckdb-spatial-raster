@@ -9,7 +9,7 @@ namespace duckdb {
 class DatabaseInstance;
 struct LogicalType;
 
-struct GeoTypes {
+struct SpatialTypes {
 	static LogicalType POINT_2D();
 	static LogicalType GEOMETRY();
 	static LogicalType WKB_BLOB();

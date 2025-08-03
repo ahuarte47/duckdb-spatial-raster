@@ -44,7 +44,7 @@ static void LoadInternal(DatabaseInstance &instance) {
 	RasterAggregateFunctions::Register(instance);
 
 	// Register the spatial types
-	GeoTypes::Register(instance);
+	SpatialTypes::Register(instance);
 	SpatialCastsFunctions::Register(instance);
 }
 

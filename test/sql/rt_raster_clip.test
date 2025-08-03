@@ -1,13 +1,9 @@
 # name: test/sql/rt_raster_clip.test
 # group: [sql]
 
+require spatial
+
 require spatial_raster
-
-statement ok
-INSTALL spatial;
-
-statement ok
-LOAD spatial;
 
 query I
 WITH __input AS (

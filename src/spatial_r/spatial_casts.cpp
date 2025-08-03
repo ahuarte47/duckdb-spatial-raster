@@ -270,13 +270,15 @@ struct GeometryCasts {
 	static void Register(DatabaseInstance &db) {
 
 		// POINT_2D -> VARCHAR
-		ExtensionUtil::RegisterCastFunction(db, GeoTypes::POINT_2D(), LogicalType::VARCHAR, PointToVarcharCast, 1);
+		ExtensionUtil::RegisterCastFunction(db, SpatialTypes::POINT_2D(), LogicalType::VARCHAR, PointToVarcharCast, 1);
 
 		// GEOMETRY -> VARCHAR
-		ExtensionUtil::RegisterCastFunction(db, GeoTypes::GEOMETRY(), LogicalType::VARCHAR, GeometryToVarcharCast, 1);
+		ExtensionUtil::RegisterCastFunction(db, SpatialTypes::GEOMETRY(), LogicalType::VARCHAR, GeometryToVarcharCast,
+		                                    1);
 
 		// GEOMETRY -> WKB_BLOB
-		ExtensionUtil::RegisterCastFunction(db, GeoTypes::GEOMETRY(), GeoTypes::WKB_BLOB(), GeometryToWKBCast, 1);
+		ExtensionUtil::RegisterCastFunction(db, SpatialTypes::GEOMETRY(), SpatialTypes::WKB_BLOB(), GeometryToWKBCast,
+		                                    1);
 	}
 };
 
