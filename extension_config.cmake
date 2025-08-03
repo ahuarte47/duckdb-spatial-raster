@@ -8,3 +8,9 @@ duckdb_extension_load(spatial_raster
 
 # Any extra extensions that should be built
 # e.g.: duckdb_extension_load(json)
+
+# Add the spatial extension to test integration with spatial-raster
+duckdb_extension_load(spatial
+    SOURCE_DIR  ${CMAKE_CURRENT_LIST_DIR}/duckdb-spatial
+    INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/duckdb-spatial/src/spatial
+)

@@ -22,7 +22,7 @@ __mosaic AS (
 		mosaic_id
 ),
 __geometry AS (
-	SELECT geom FROM ST_Read('./test/data/CATAST_Pol_Township-PNA.gpkg')
+	SELECT geom FROM ST_Read('./test/data/CATAST_Pol_Township-PNA.geojson')
 ),
 __clip AS (
 	SELECT
@@ -61,7 +61,7 @@ __mosaic AS (
 		mosaic_id
 ),
 __geometry AS (
-	SELECT geom FROM ST_Read('./test/data/CATAST_Pol_Township-PNA.gpkg')
+	SELECT geom FROM ST_Read('./test/data/CATAST_Pol_Township-PNA.geojson')
 ),
 __asblob AS (
 	SELECT RT_RasterAsBlob(mosaic) AS raster FROM __mosaic
