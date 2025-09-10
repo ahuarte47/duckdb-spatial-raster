@@ -1,7 +1,7 @@
 #include "raster_agg.hpp"
 
 // DuckDB
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb.hpp"
 // GDAL
 #include "gdal_priv.h"
 

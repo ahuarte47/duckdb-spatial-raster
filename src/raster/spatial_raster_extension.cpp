@@ -5,7 +5,6 @@
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/function/scalar_function.hpp"
-#include "duckdb/main/extension_util.hpp"
 #include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
 
 #include "modules/proj/proj_module.hpp"
@@ -22,34 +21,34 @@
 
 namespace duckdb {
 
-static void LoadInternal(DatabaseInstance &instance) {
+static void LoadInternal(ExtensionLoader &loader) {
 
 	// Register the VFS for the proj.db database
-	ProjModule::Register(instance);
+	ProjModule::Register(loader);
 
 	// Register the GDAL module for RASTER
-	GdalModule::Register(instance);
+	GdalModule::Register(loader);
 
 	// Register the types
-	RasterTypes::Register(instance);
+	RasterTypes::Register(loader);
 
 	// Register the Table functions
-	RasterTableFunctions::Register(instance);
+	RasterTableFunctions::Register(loader);
 
 	// Register other functions
-	RasterCastsFunctions::Register(instance);
-	RasterBandFunctions::Register(instance);
-	RasterScalarFunctions::Register(instance);
-	RasterFileFunctions::Register(instance);
-	RasterAggregateFunctions::Register(instance);
+	RasterCastsFunctions::Register(loader);
+	RasterBandFunctions::Register(loader);
+	RasterScalarFunctions::Register(loader);
+	RasterFileFunctions::Register(loader);
+	RasterAggregateFunctions::Register(loader);
 
 	// Register the spatial types
-	SpatialTypes::Register(instance);
-	SpatialCastsFunctions::Register(instance);
+	SpatialTypes::Register(loader);
+	SpatialCastsFunctions::Register(loader);
 }
 
-void SpatialRasterExtension::Load(DuckDB &db) {
-	LoadInternal(*db.instance);
+void SpatialRasterExtension::Load(ExtensionLoader &loader) {
+	LoadInternal(loader);
 }
 std::string SpatialRasterExtension::Name() {
 	return "spatial_raster";
@@ -67,16 +66,7 @@ std::string SpatialRasterExtension::Version() const {
 
 extern "C" {
 
-DUCKDB_EXTENSION_API void spatial_raster_init(duckdb::DatabaseInstance &db) {
-	duckdb::DuckDB db_wrapper(db);
-	db_wrapper.LoadExtension<duckdb::SpatialRasterExtension>();
-}
-
-DUCKDB_EXTENSION_API const char *spatial_raster_version() {
-	return duckdb::DuckDB::LibraryVersion();
+DUCKDB_CPP_EXTENSION_ENTRY(spatial_raster, loader) {
+	duckdb::LoadInternal(loader);
 }
 }
-
-#ifndef DUCKDB_EXTENSION_MAIN
-#error DUCKDB_EXTENSION_MAIN not defined
-#endif

@@ -5,7 +5,7 @@
 
 // DuckDB
 #include "duckdb/main/database.hpp"
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb/main/extension/extension_loader.hpp"
 #include "duckdb/common/vector_operations/generic_executor.hpp"
 // Spatial
 #include "spatial/util/function_builder.hpp"
@@ -123,9 +123,9 @@ struct RT_RasterBand {
 		    });
 	}
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
-		FunctionBuilder::RegisterScalar(db, "RT_HasNoBand", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_HasNoBand", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("band_number", LogicalType::INTEGER);
@@ -153,7 +153,7 @@ struct RT_RasterBand {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_GetBandNoDataValue", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_GetBandNoDataValue", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("band_number", LogicalType::INTEGER);
@@ -180,7 +180,7 @@ struct RT_RasterBand {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_GetBandPixelType", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_GetBandPixelType", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("band_number", LogicalType::INTEGER);
@@ -224,7 +224,7 @@ struct RT_RasterBand {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_GetBandPixelTypeName", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_GetBandPixelTypeName", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("band_number", LogicalType::INTEGER);
@@ -268,7 +268,7 @@ struct RT_RasterBand {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_GetBandColorInterpretation", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_GetBandColorInterpretation", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("band_number", LogicalType::INTEGER);
@@ -314,7 +314,7 @@ struct RT_RasterBand {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_GetBandColorInterpretationName", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_GetBandColorInterpretationName", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("band_number", LogicalType::INTEGER);
@@ -368,8 +368,8 @@ struct RT_RasterBand {
 //  Register File functions
 // ######################################################################################################################
 
-void RasterBandFunctions::Register(DatabaseInstance &db) {
-	RT_RasterBand::Register(db);
+void RasterBandFunctions::Register(ExtensionLoader &loader) {
+	RT_RasterBand::Register(loader);
 }
 
 } // namespace duckdb

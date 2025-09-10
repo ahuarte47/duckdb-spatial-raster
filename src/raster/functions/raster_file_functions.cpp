@@ -3,7 +3,7 @@
 
 // DuckDB
 #include "duckdb/main/database.hpp"
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb/main/extension/extension_loader.hpp"
 #include "duckdb/common/vector_operations/generic_executor.hpp"
 // Spatial
 #include "spatial/util/function_builder.hpp"
@@ -117,9 +117,9 @@ struct RT_File {
 		    });
 	}
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
-		FunctionBuilder::RegisterScalar(db, "RT_RasterFromFile", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_RasterFromFile", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("path", LogicalType::VARCHAR);
 				variant.SetReturnType(RasterTypes::RASTER());
@@ -151,7 +151,7 @@ struct RT_File {
 			func.SetTag("category", "serialization");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_RasterAsFile", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_RasterAsFile", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("file_name", LogicalType::VARCHAR);
@@ -394,9 +394,9 @@ struct RT_Blob {
 		    });
 	}
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
-		FunctionBuilder::RegisterScalar(db, "RT_RasterFromBlob", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_RasterFromBlob", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("blob", LogicalType::BLOB);
 				variant.SetReturnType(RasterTypes::RASTER());
@@ -447,7 +447,7 @@ struct RT_Blob {
 			func.SetTag("category", "serialization");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_RasterAsBlob", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_RasterAsBlob", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(LogicalType::BLOB);
@@ -502,9 +502,9 @@ struct RT_Blob {
 //  Register File functions
 // ######################################################################################################################
 
-void RasterFileFunctions::Register(DatabaseInstance &db) {
-	RT_File::Register(db);
-	RT_Blob::Register(db);
+void RasterFileFunctions::Register(ExtensionLoader &loader) {
+	RT_File::Register(loader);
+	RT_Blob::Register(loader);
 }
 
 } // namespace duckdb

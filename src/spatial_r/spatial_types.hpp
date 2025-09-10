@@ -6,7 +6,7 @@
 
 namespace duckdb {
 
-class DatabaseInstance;
+class ExtensionLoader;
 struct LogicalType;
 
 struct SpatialTypes {
@@ -14,7 +14,7 @@ struct SpatialTypes {
 	static LogicalType GEOMETRY();
 	static LogicalType WKB_BLOB();
 
-	static void Register(DatabaseInstance &db);
+	static void Register(ExtensionLoader &loader);
 };
 
 //! Location of a XY coordinate in geographic coordinates

@@ -6,14 +6,14 @@
 
 namespace duckdb {
 
-class DatabaseInstance;
+class ExtensionLoader;
 struct LogicalType;
 
 struct RasterTypes {
 	static LogicalType RASTER();
 	static LogicalType RASTER_COORD();
 
-	static void Register(DatabaseInstance &db);
+	static void Register(ExtensionLoader &loader);
 };
 
 //! Position of a cell in a Raster (upper left corner as column and row)

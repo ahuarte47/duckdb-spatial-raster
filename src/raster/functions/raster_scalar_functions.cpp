@@ -3,7 +3,7 @@
 
 // DuckDB
 #include "duckdb/main/database.hpp"
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb/main/extension/extension_loader.hpp"
 #include "duckdb/common/vector_operations/generic_executor.hpp"
 // Spatial
 #include "spatial_r/spatial_types.hpp"
@@ -33,9 +33,9 @@ struct RT_Srid {
 		});
 	}
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
-		FunctionBuilder::RegisterScalar(db, "RT_Srid", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_Srid", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(LogicalType::INTEGER);
@@ -131,9 +131,9 @@ struct RT_Geometry {
 		});
 	}
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
-		FunctionBuilder::RegisterScalar(db, "RT_GetGeometry", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_GetGeometry", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(SpatialTypes::GEOMETRY());
@@ -159,7 +159,7 @@ struct RT_Geometry {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_GetBBox", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_GetBBox", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(SpatialTypes::GEOMETRY());
@@ -265,9 +265,9 @@ struct RT_Properties {
 		});
 	}
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
-		FunctionBuilder::RegisterScalar(db, "RT_Width", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_Width", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(LogicalType::INTEGER);
@@ -293,7 +293,7 @@ struct RT_Properties {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_Height", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_Height", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(LogicalType::INTEGER);
@@ -319,7 +319,7 @@ struct RT_Properties {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_NumBands", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_NumBands", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(LogicalType::INTEGER);
@@ -345,7 +345,7 @@ struct RT_Properties {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_UpperLeftX", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_UpperLeftX", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(LogicalType::DOUBLE);
@@ -371,7 +371,7 @@ struct RT_Properties {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_UpperLeftY", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_UpperLeftY", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(LogicalType::DOUBLE);
@@ -398,7 +398,7 @@ struct RT_Properties {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_ScaleX", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_ScaleX", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(LogicalType::DOUBLE);
@@ -425,7 +425,7 @@ struct RT_Properties {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_ScaleY", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_ScaleY", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(LogicalType::DOUBLE);
@@ -452,7 +452,7 @@ struct RT_Properties {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_SkewX", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_SkewX", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(LogicalType::DOUBLE);
@@ -479,7 +479,7 @@ struct RT_Properties {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_SkewY", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_SkewY", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(LogicalType::DOUBLE);
@@ -506,7 +506,7 @@ struct RT_Properties {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_PixelWidth", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_PixelWidth", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(LogicalType::DOUBLE);
@@ -533,7 +533,7 @@ struct RT_Properties {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_PixelHeight", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_PixelHeight", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.SetReturnType(LogicalType::DOUBLE);
@@ -626,9 +626,9 @@ struct RT_RasterToWorldCoord {
 		    });
 	}
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
-		FunctionBuilder::RegisterScalar(db, "RT_RasterToWorldCoord", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_RasterToWorldCoord", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("col", LogicalType::INTEGER);
@@ -657,7 +657,7 @@ struct RT_RasterToWorldCoord {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_RasterToWorldCoordX", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_RasterToWorldCoordX", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("col", LogicalType::INTEGER);
@@ -686,7 +686,7 @@ struct RT_RasterToWorldCoord {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_RasterToWorldCoordY", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_RasterToWorldCoordY", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("col", LogicalType::INTEGER);
@@ -782,9 +782,9 @@ struct RT_WorldToRasterCoord {
 		    });
 	}
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
-		FunctionBuilder::RegisterScalar(db, "RT_WorldToRasterCoord", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_WorldToRasterCoord", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("x", LogicalType::DOUBLE);
@@ -813,7 +813,7 @@ struct RT_WorldToRasterCoord {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_WorldToRasterCoordX", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_WorldToRasterCoordX", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("x", LogicalType::DOUBLE);
@@ -842,7 +842,7 @@ struct RT_WorldToRasterCoord {
 			func.SetTag("category", "property");
 		});
 
-		FunctionBuilder::RegisterScalar(db, "RT_WorldToRasterCoordY", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_WorldToRasterCoordY", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("x", LogicalType::DOUBLE);
@@ -922,9 +922,9 @@ struct RT_Value {
 		    });
 	}
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
-		FunctionBuilder::RegisterScalar(db, "RT_Value", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_Value", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("band", LogicalType::INTEGER);
@@ -1008,9 +1008,9 @@ struct RT_RasterWarp {
 		    });
 	}
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
-		FunctionBuilder::RegisterScalar(db, "RT_RasterWarp", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_RasterWarp", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("options", LogicalType::LIST(LogicalType::VARCHAR));
@@ -1137,9 +1137,9 @@ struct RT_RasterClip {
 		    });
 	}
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
-		FunctionBuilder::RegisterScalar(db, "RT_RasterClip", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_RasterClip", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("geometry", SpatialTypes::GEOMETRY());
@@ -1265,9 +1265,9 @@ struct RT_RasterSplit {
 		    });
 	}
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
-		FunctionBuilder::RegisterScalar(db, "RT_RasterSplit", [](ScalarFunctionBuilder &func) {
+		FunctionBuilder::RegisterScalar(loader, "RT_RasterSplit", [](ScalarFunctionBuilder &func) {
 			func.AddVariant([](ScalarFunctionVariantBuilder &variant) {
 				variant.AddParameter("raster", RasterTypes::RASTER());
 				variant.AddParameter("tile_size_x", LogicalType::INTEGER);
@@ -1319,16 +1319,16 @@ struct RT_RasterSplit {
 //  Register Scalar functions
 // ######################################################################################################################
 
-void RasterScalarFunctions::Register(DatabaseInstance &db) {
-	RT_Srid::Register(db);
-	RT_Geometry::Register(db);
-	RT_Properties::Register(db);
-	RT_RasterToWorldCoord::Register(db);
-	RT_WorldToRasterCoord::Register(db);
-	RT_Value::Register(db);
-	RT_RasterWarp::Register(db);
-	RT_RasterClip::Register(db);
-	RT_RasterSplit::Register(db);
+void RasterScalarFunctions::Register(ExtensionLoader &loader) {
+	RT_Srid::Register(loader);
+	RT_Geometry::Register(loader);
+	RT_Properties::Register(loader);
+	RT_RasterToWorldCoord::Register(loader);
+	RT_WorldToRasterCoord::Register(loader);
+	RT_Value::Register(loader);
+	RT_RasterWarp::Register(loader);
+	RT_RasterClip::Register(loader);
+	RT_RasterSplit::Register(loader);
 }
 
 } // namespace duckdb

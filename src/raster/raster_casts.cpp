@@ -4,7 +4,7 @@
 
 // DuckDB
 #include "duckdb/main/database.hpp"
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb/main/extension/extension_loader.hpp"
 #include "duckdb/common/vector_operations/generic_executor.hpp"
 // Spatial
 #include "spatial_r/spatial_types.hpp"
@@ -86,25 +86,21 @@ struct RasterCasts {
 	// Register
 	//------------------------------------------------------------------------------------------------------------------
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 		// RASTER -> VARCHAR
-		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER(), LogicalType::VARCHAR, RasterToVarcharCast, 1);
+		loader.RegisterCastFunction(RasterTypes::RASTER(), LogicalType::VARCHAR, RasterToVarcharCast, 1);
 
 		// RASTER -> GEOMETRY
-		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER(), SpatialTypes::GEOMETRY(), RasterToGeometryCast,
-		                                    1);
+		loader.RegisterCastFunction(RasterTypes::RASTER(), SpatialTypes::GEOMETRY(), RasterToGeometryCast, 1);
 
 		// RASTER -> POINTER is implicitly castable
-		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER(), LogicalType::POINTER,
-		                                    DefaultCasts::ReinterpretCast, 1);
+		loader.RegisterCastFunction(RasterTypes::RASTER(), LogicalType::POINTER, DefaultCasts::ReinterpretCast, 1);
 
 		// POINTER -> RASTER is implicitly castable
-		ExtensionUtil::RegisterCastFunction(db, LogicalType::POINTER, RasterTypes::RASTER(),
-		                                    DefaultCasts::ReinterpretCast, 1);
+		loader.RegisterCastFunction(LogicalType::POINTER, RasterTypes::RASTER(), DefaultCasts::ReinterpretCast, 1);
 
 		// RASTER_COORD -> VARCHAR
-		ExtensionUtil::RegisterCastFunction(db, RasterTypes::RASTER_COORD(), LogicalType::VARCHAR, CoordToVarcharCast,
-		                                    1);
+		loader.RegisterCastFunction(RasterTypes::RASTER_COORD(), LogicalType::VARCHAR, CoordToVarcharCast, 1);
 	}
 };
 
@@ -114,8 +110,8 @@ struct RasterCasts {
 //  Register
 // ######################################################################################################################
 
-void RasterCastsFunctions::Register(DatabaseInstance &db) {
-	RasterCasts::Register(db);
+void RasterCastsFunctions::Register(ExtensionLoader &loader) {
+	RasterCasts::Register(loader);
 }
 
 } // namespace duckdb

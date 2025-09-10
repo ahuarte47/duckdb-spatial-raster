@@ -1,5 +1,5 @@
 #include "gdal_module.hpp"
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb/main/extension/extension_loader.hpp"
 
 // GDAL
 #include "cpl_string.h"
@@ -10,7 +10,7 @@
 
 namespace duckdb {
 
-void GdalModule::Register(DatabaseInstance &db) {
+void GdalModule::Register(ExtensionLoader &loader) {
 
 	// Load GDAL (once)
 	static std::once_flag loaded;

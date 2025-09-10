@@ -2,11 +2,11 @@
 
 namespace duckdb {
 
-class DatabaseInstance;
+class ExtensionLoader;
 
 struct RasterCastsFunctions {
 public:
-	static void Register(DatabaseInstance &db);
+	static void Register(ExtensionLoader &loader);
 };
 
 } // namespace duckdb

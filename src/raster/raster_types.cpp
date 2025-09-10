@@ -1,5 +1,5 @@
 #include "raster_types.hpp"
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb/main/extension/extension_loader.hpp"
 
 namespace duckdb {
 
@@ -15,13 +15,13 @@ LogicalType RasterTypes::RASTER_COORD() {
 	return type;
 }
 
-void RasterTypes::Register(DatabaseInstance &db) {
+void RasterTypes::Register(ExtensionLoader &loader) {
 
 	// RASTER
-	ExtensionUtil::RegisterType(db, "RASTER", RasterTypes::RASTER());
+	loader.RegisterType("RASTER", RasterTypes::RASTER());
 
 	// RASTER_COORD
-	ExtensionUtil::RegisterType(db, "RASTER_COORD", RasterTypes::RASTER_COORD());
+	loader.RegisterType("RASTER_COORD", RasterTypes::RASTER_COORD());
 }
 
 } // namespace duckdb

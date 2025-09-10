@@ -4,7 +4,7 @@
 
 // DuckDB
 #include "duckdb/main/database.hpp"
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb/main/extension/extension_loader.hpp"
 // Spatial
 #include "spatial_r/spatial_types.hpp"
 #include "spatial/util/function_builder.hpp"
@@ -66,7 +66,7 @@ struct RT_RasterUnion_Agg {
 		}
 	};
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
 		auto fun01 = AggregateFunction::UnaryAggregate<RasterAggState, uintptr_t, uintptr_t, UnionAggUnaryOperation>(
 		    RasterTypes::RASTER(), RasterTypes::RASTER());
@@ -77,7 +77,7 @@ struct RT_RasterUnion_Agg {
 		    RasterTypes::RASTER(), LogicalType::LIST(LogicalType::VARCHAR), RasterTypes::RASTER());
 		fun02.bind = RasterAggBindData::BindRasterAggOperation;
 
-		FunctionBuilder::RegisterAggregate(db, "RT_RasterUnion_Agg", [&](AggregateFunctionBuilder &func) {
+		FunctionBuilder::RegisterAggregate(loader, "RT_RasterUnion_Agg", [&](AggregateFunctionBuilder &func) {
 			func.SetFunction(fun01);
 			func.SetFunction(fun02);
 			func.SetDescription(R"(
@@ -161,7 +161,7 @@ struct RT_RasterMosaic_Agg {
 		}
 	};
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
 		auto fun01 = AggregateFunction::UnaryAggregate<RasterAggState, uintptr_t, uintptr_t, MosaicAggUnaryOperation>(
 		    RasterTypes::RASTER(), RasterTypes::RASTER());
@@ -172,7 +172,7 @@ struct RT_RasterMosaic_Agg {
 		    RasterTypes::RASTER(), LogicalType::LIST(LogicalType::VARCHAR), RasterTypes::RASTER());
 		fun02.bind = RasterAggBindData::BindRasterAggOperation;
 
-		FunctionBuilder::RegisterAggregate(db, "RT_RasterMosaic_Agg", [&](AggregateFunctionBuilder &func) {
+		FunctionBuilder::RegisterAggregate(loader, "RT_RasterMosaic_Agg", [&](AggregateFunctionBuilder &func) {
 			func.SetFunction(fun01);
 			func.SetFunction(fun02);
 			func.SetDescription(R"(
@@ -214,9 +214,9 @@ struct RT_RasterMosaic_Agg {
 //  Register Scalar functions
 // ######################################################################################################################
 
-void RasterAggregateFunctions::Register(DatabaseInstance &db) {
-	RT_RasterUnion_Agg::Register(db);
-	RT_RasterMosaic_Agg::Register(db);
+void RasterAggregateFunctions::Register(ExtensionLoader &loader) {
+	RT_RasterUnion_Agg::Register(loader);
+	RT_RasterMosaic_Agg::Register(loader);
 }
 
 } // namespace duckdb

@@ -1,5 +1,5 @@
 #include "spatial_types.hpp"
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb/main/extension/extension_loader.hpp"
 
 namespace duckdb {
 
@@ -21,16 +21,16 @@ LogicalType SpatialTypes::WKB_BLOB() {
 	return blob_type;
 }
 
-void SpatialTypes::Register(DatabaseInstance &db) {
+void SpatialTypes::Register(ExtensionLoader &loader) {
 
 	// POINT_2D
-	ExtensionUtil::RegisterType(db, "RPOINT_2D", SpatialTypes::POINT_2D());
+	loader.RegisterType("RPOINT_2D", SpatialTypes::POINT_2D());
 
 	// GEOMETRY
-	ExtensionUtil::RegisterType(db, "RGEOMETRY", SpatialTypes::GEOMETRY());
+	loader.RegisterType("RGEOMETRY", SpatialTypes::GEOMETRY());
 
 	// WKB_BLOB
-	ExtensionUtil::RegisterType(db, "RWKB_BLOB", SpatialTypes::WKB_BLOB());
+	loader.RegisterType("RWKB_BLOB", SpatialTypes::WKB_BLOB());
 }
 
 } // namespace duckdb

@@ -3,7 +3,7 @@
 
 // DuckDB
 #include "duckdb/main/database.hpp"
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb/main/extension/extension_loader.hpp"
 #include "duckdb/common/vector_operations/generic_executor.hpp"
 // Spatial
 #include "spatial/geometry/geometry_processor.hpp"
@@ -267,18 +267,16 @@ struct GeometryCasts {
 	// Register
 	//------------------------------------------------------------------------------------------------------------------
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 
 		// POINT_2D -> VARCHAR
-		ExtensionUtil::RegisterCastFunction(db, SpatialTypes::POINT_2D(), LogicalType::VARCHAR, PointToVarcharCast, 1);
+		loader.RegisterCastFunction(SpatialTypes::POINT_2D(), LogicalType::VARCHAR, PointToVarcharCast, 1);
 
 		// GEOMETRY -> VARCHAR
-		ExtensionUtil::RegisterCastFunction(db, SpatialTypes::GEOMETRY(), LogicalType::VARCHAR, GeometryToVarcharCast,
-		                                    1);
+		loader.RegisterCastFunction(SpatialTypes::GEOMETRY(), LogicalType::VARCHAR, GeometryToVarcharCast, 1);
 
 		// GEOMETRY -> WKB_BLOB
-		ExtensionUtil::RegisterCastFunction(db, SpatialTypes::GEOMETRY(), SpatialTypes::WKB_BLOB(), GeometryToWKBCast,
-		                                    1);
+		loader.RegisterCastFunction(SpatialTypes::GEOMETRY(), SpatialTypes::WKB_BLOB(), GeometryToWKBCast, 1);
 	}
 };
 
@@ -288,8 +286,8 @@ struct GeometryCasts {
 //  Register
 // ######################################################################################################################
 
-void SpatialCastsFunctions::Register(DatabaseInstance &db) {
-	GeometryCasts::Register(db);
+void SpatialCastsFunctions::Register(ExtensionLoader &loader) {
+	GeometryCasts::Register(loader);
 }
 
 } // namespace duckdb

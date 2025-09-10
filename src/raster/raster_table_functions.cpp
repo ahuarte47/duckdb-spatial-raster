@@ -5,7 +5,7 @@
 
 // DuckDB
 #include "duckdb/main/database.hpp"
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb/main/extension/extension_loader.hpp"
 #include "duckdb/common/multi_file/multi_file_reader.hpp"
 #include "duckdb/parser/expression/function_expression.hpp"
 #include "duckdb/parser/parsed_data/create_copy_function_info.hpp"
@@ -139,13 +139,13 @@ struct RT_Drivers {
 	// Register
 	//------------------------------------------------------------------------------------------------------------------
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 		const TableFunction func("RT_Drivers", {}, Execute, Bind, Init);
-		ExtensionUtil::RegisterFunction(db, func);
+		loader.RegisterFunction(func);
 
 		InsertionOrderPreservingMap<string> tags;
 		tags.insert("ext", "spatial_raster");
-		FunctionBuilder::AddTableFunctionDocs(db, "RT_Drivers", DESCRIPTION, EXAMPLE, tags);
+		FunctionBuilder::AddTableFunctionDocs(loader, "RT_Drivers", DESCRIPTION, EXAMPLE, tags);
 	}
 };
 
@@ -323,20 +323,21 @@ struct RT_Read {
 	// Register
 	//------------------------------------------------------------------------------------------------------------------
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 		TableFunction func("RT_Read", {LogicalType::VARCHAR}, Execute, Bind);
 
 		func.cardinality = Cardinality;
 		func.named_parameters["open_options"] = LogicalType::LIST(LogicalType::VARCHAR);
 		func.named_parameters["allowed_drivers"] = LogicalType::LIST(LogicalType::VARCHAR);
 		func.named_parameters["sibling_files"] = LogicalType::LIST(LogicalType::VARCHAR);
-		ExtensionUtil::RegisterFunction(db, func);
+		loader.RegisterFunction(func);
 
 		InsertionOrderPreservingMap<string> tags;
 		tags.insert("ext", "spatial_raster");
-		FunctionBuilder::AddTableFunctionDocs(db, "RT_Read", DOCUMENTATION, EXAMPLE, tags);
+		FunctionBuilder::AddTableFunctionDocs(loader, "RT_Read", DOCUMENTATION, EXAMPLE, tags);
 
 		// Replacement scan
+		auto &db = loader.GetDatabaseInstance();
 		auto &config = DBConfig::GetConfig(db);
 		config.replacement_scans.emplace_back(ReplacementScan);
 	}
@@ -508,13 +509,13 @@ struct RT_Read_Meta {
 	// Register
 	//------------------------------------------------------------------------------------------------------------------
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 		const TableFunction func("RT_Read_Meta", {LogicalType::VARCHAR}, Execute, Bind, Init);
-		ExtensionUtil::RegisterFunction(db, MultiFileReader::CreateFunctionSet(func));
+		loader.RegisterFunction(MultiFileReader::CreateFunctionSet(func));
 
 		InsertionOrderPreservingMap<string> tags;
 		tags.insert("ext", "spatial_raster");
-		FunctionBuilder::AddTableFunctionDocs(db, "RT_Read_Meta", DOCUMENTATION, EXAMPLE, tags);
+		FunctionBuilder::AddTableFunctionDocs(loader, "RT_Read_Meta", DOCUMENTATION, EXAMPLE, tags);
 	}
 };
 
@@ -684,7 +685,7 @@ struct RT_Write {
 	// Register
 	//------------------------------------------------------------------------------------------------------------------
 
-	static void Register(DatabaseInstance &db) {
+	static void Register(ExtensionLoader &loader) {
 		// register the copy function
 		CopyFunction info("RASTER");
 		info.copy_to_bind = Bind;
@@ -695,7 +696,7 @@ struct RT_Write {
 		info.copy_to_finalize = Finalize;
 		info.extension = "raster";
 
-		ExtensionUtil::RegisterFunction(db, info);
+		loader.RegisterFunction(info);
 	}
 };
 
@@ -705,13 +706,13 @@ struct RT_Write {
 //  Register Raster Table Functions
 // ######################################################################################################################
 
-void RasterTableFunctions::Register(DatabaseInstance &db) {
+void RasterTableFunctions::Register(ExtensionLoader &loader) {
 
 	// Register functions
-	RT_Drivers::Register(db);
-	RT_Read::Register(db);
-	RT_Read_Meta::Register(db);
-	RT_Write::Register(db);
+	RT_Drivers::Register(loader);
+	RT_Read::Register(loader);
+	RT_Read_Meta::Register(loader);
+	RT_Write::Register(loader);
 }
 
 } // namespace duckdb

@@ -1,5 +1,5 @@
 #include "proj_module.hpp"
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb/main/extension/extension_loader.hpp"
 
 // PROJ
 #include "proj.h"
@@ -28,7 +28,7 @@ struct std::hash<std::pair<std::string, std::string>> {
 
 namespace duckdb {
 
-void ProjModule::Register(DatabaseInstance &db) {
+void ProjModule::Register(ExtensionLoader &loader) {
 
 	// Initialization lock around global proj state
 	static mutex lock;
