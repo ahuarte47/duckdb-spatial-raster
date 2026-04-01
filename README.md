@@ -1,6 +1,6 @@
 # DuckDB SpatialRaster Extension
 
-🚧 WORK IN PROGRESS 🚧
+<span style="font-size:2em">⚠️</span> **This extension is no longer maintained and has been replaced by [duckdb-raster](https://github.com/ahuarte47/duckdb-raster).**
 
 # What is this?
 
